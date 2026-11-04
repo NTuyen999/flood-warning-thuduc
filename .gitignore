@@ -1,0 +1,26 @@
+﻿# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local configuration
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+
+# Historical datasets at project root
+/data/
+
+# Generated ML outputs
+/ml/outputs/
+
+# Old training model artifacts
+/ml/saved_models/*.joblib
+
+# Operating system
+.DS_Store
+Thumbs.db
