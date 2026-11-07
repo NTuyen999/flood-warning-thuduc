@@ -59,23 +59,27 @@ class MapScreen extends StatelessWidget {
             left: 0,
             right: 0,
             bottom: 0,
-            child: Container(
+            child: Material(
               color: Colors.white,
-              height: 170,
-              child: ListView(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Text('Chạm một đoạn đường (giả lập):'),
-                  ),
-                  for (final s in segments)
-                    ListTile(
-                      title: Text(s),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => DetailScreen(name: s))),
+              child: SizedBox(
+                height: 170,
+                child: ListView(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Text('Chạm một đoạn đường (giả lập):'),
                     ),
-                ],
+                    for (final s in segments)
+                      ListTile(
+                        title: Text(s),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => DetailScreen(name: s))),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

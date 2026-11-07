@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "segment_id": "TD01", "name": "Võ Văn Ngân" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[106.7600, 10.8500], [106.7700, 10.8510], [106.7800, 10.8520]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "segment_id": "TD02", "name": "Kha Vạn Cân" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[106.7300, 10.8300], [106.7400, 10.8350], [106.7500, 10.8400]]
+      }
+    }
+  ]
+}
