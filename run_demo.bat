@@ -33,13 +33,26 @@ echo API san sang. Mo trinh duyet...
 start "" "%URL%/docs"
 start "" "%URL%/api/v1/rain-proxy/latest"
 
-where flutter >nul 2>nul
+rem App mobile tren may ao Android (AVD trong Android Studio).
+set "FLUTTER=flutter"
+where flutter >nul 2>nul || set "FLUTTER=D:\flutter\bin\flutter.bat"
+set "ADB=%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe"
+set "AVD=Pixel_10a"
+if not exist "%FLUTTER%" where flutter >nul 2>nul || (echo [3/3] Bo qua app: khong tim thay Flutter SDK. & goto :done)
+
+"%ADB%" get-state >nul 2>nul
 if errorlevel 1 (
-    echo [3/3] Bo qua app mobile: may chua cai Flutter SDK.
-) else (
-    echo [3/3] Chay app Flutter tren Chrome...
-    start "Flood App" cmd /k "cd /d mobile && flutter pub get && flutter run -d chrome"
+    echo [3/3] Bat may ao %AVD%...
+    start "" "%LOCALAPPDATA%\Android\Sdk\emulator\emulator.exe" -avd %AVD%
+    "%ADB%" wait-for-device
 )
+echo [3/3] Doi may ao khoi dong xong...
+"%ADB%" shell "while [ -z $(getprop sys.boot_completed) ]; do sleep 2; done"
+echo [3/3] Build va cai app len may ao (lan dau ~5-10 phut)...
+rem --release: muot hon debug nhieu (khong co hot reload). Can sua code thi chay "flutter run" thuong.
+start "Flood App - nhan q de thoat" /d "%~dp0mobile" cmd /k ""%FLUTTER%" run --release -d emulator-5554"
+
+:done
 
 echo.
 echo Xong. Dong cua so "Flood API" de tat server.
