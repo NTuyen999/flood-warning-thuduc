@@ -1,7 +1,7 @@
 @echo off
 rem Demo nhanh: PostGIS (Docker) + API backend (FastAPI) + app Flutter ban release tren may ao Android.
 rem Lan dau: tao .venv + build APK (~5-15 phut). Cac lan sau: chi mo app, khong build lai
-rem tru khi code trong mobile\lib, mobile\assets hoac pubspec.yaml thay doi.
+rem tru khi code trong mobile\lib, mobile\android\app\src hoac pubspec.yaml thay doi.
 setlocal
 cd /d "%~dp0"
 set "URL=http://127.0.0.1:8000"
@@ -45,8 +45,8 @@ if errorlevel 1 (
 )
 
 rem --- 5. Build APK release chi khi code thay doi ---
-rem shortcut: chi so thoi gian sua file trong lib/assets/pubspec.yaml; sua android/ thi xoa APK de build lai.
-powershell -NoProfile -Command "$a='%APK%'; if(!(Test-Path $a)){exit 1}; $t=(Get-Item $a).LastWriteTime; if(Get-ChildItem mobile\lib,mobile\assets,mobile\pubspec.yaml -Recurse -File | Where-Object LastWriteTime -gt $t | Select-Object -First 1){exit 1}; exit 0"
+rem shortcut: chi so thoi gian sua file trong lib, android/app/src, pubspec.yaml; sua file gradle thi xoa APK de build lai.
+powershell -NoProfile -Command "$a='%APK%'; if(!(Test-Path $a)){exit 1}; $t=(Get-Item $a).LastWriteTime; if(Get-ChildItem mobile\lib,mobile\android\app\src,mobile\pubspec.yaml -Recurse -File | Where-Object LastWriteTime -gt $t | Select-Object -First 1){exit 1}; exit 0"
 if errorlevel 1 (
     echo [5/6] Build APK release ^(chi build cho may ao x64^)...
     pushd mobile

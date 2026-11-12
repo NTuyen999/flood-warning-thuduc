@@ -1,7 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- "Vi tri cua toi" on the map and in the report form -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- shortcut: usesCleartextTraffic allows plain http to the dev backend (10.0.2.2 / LAN);
+         remove it once the API is served over https. -->
     <application
         android:label="Cảnh báo Thủ Đức"
+        android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -1,4 +1,4 @@
 import 'api_service.dart';
-import 'mock_api_service.dart';
 
-final ApiService api = MockApiService();
+/// The one API client of the app. Tests replace it with a fake-backed instance.
+ApiService api = ApiService();
