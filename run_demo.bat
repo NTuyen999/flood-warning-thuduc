@@ -1,5 +1,5 @@
 @echo off
-rem Demo nhanh: API du bao (FastAPI) + app Flutter ban release tren may ao Android.
+rem Demo nhanh: PostGIS (Docker) + API backend (FastAPI) + app Flutter ban release tren may ao Android.
 rem Lan dau: tao .venv + build APK (~5-15 phut). Cac lan sau: chi mo app, khong build lai
 rem tru khi code trong mobile\lib, mobile\assets hoac pubspec.yaml thay doi.
 setlocal
@@ -17,34 +17,38 @@ where flutter >nul 2>nul || set "FLUTTER=D:\flutter\bin\flutter.bat"
 rem --- 1. Bat may ao truoc (buoc lau nhat), chay song song voi cac buoc sau ---
 "%ADB%" get-state >nul 2>nul
 if errorlevel 1 (
-    echo [1/5] Bat may ao %AVD%...
+    echo [1/6] Bat may ao %AVD%...
     start "" "%EMU%" -avd %AVD% -no-boot-anim
 ) else (
-    echo [1/5] May ao da chay san.
+    echo [1/6] May ao da chay san.
 )
 
-rem --- 2. Moi truong Python (chi lan dau) ---
-if not exist ".venv\.installed" (
-    echo [2/5] Tao moi truong Python va cai thu vien...
-    if not exist ".venv\Scripts\python.exe" python -m venv .venv || goto :fail
-    ".venv\Scripts\python.exe" -m pip install -q -r requirements.txt || goto :fail
-    echo ok> ".venv\.installed"
+rem --- 2. Moi truong Python (cai lai khi requirements.txt doi; da du thi chi mat vai giay) ---
+if not exist ".venv\Scripts\python.exe" (
+    echo [2/6] Tao moi truong Python...
+    python -m venv .venv || goto :fail
 )
+echo [2/6] Kiem tra thu vien Python...
+".venv\Scripts\python.exe" -m pip install -q --disable-pip-version-check -r requirements.txt || goto :fail
 
-rem --- 3. Bat API (thu nho cua so) ---
-curl -s -o nul %URL%/docs
+rem --- 3. PostgreSQL/PostGIS trong Docker (can bat Docker Desktop truoc) ---
+echo [3/6] Bat PostGIS...
+docker compose up -d --wait db || (echo Hay bat Docker Desktop roi chay lai. & goto :fail)
+
+rem --- 4. Bat API backend (thu nho cua so) ---
+curl -s -o nul -f %URL%/health
 if errorlevel 1 (
-    echo [3/5] Khoi dong API...
-    start "Flood API - dong cua so nay de tat" /min ".venv\Scripts\python.exe" -m uvicorn ml.src.models.19_live_api:app --host 127.0.0.1 --port 8000
+    echo [4/6] Khoi dong API...
+    start "Flood API - dong cua so nay de tat" /min ".venv\Scripts\python.exe" -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ) else (
-    echo [3/5] API da chay san.
+    echo [4/6] API da chay san.
 )
 
-rem --- 4. Build APK release chi khi code thay doi ---
+rem --- 5. Build APK release chi khi code thay doi ---
 rem shortcut: chi so thoi gian sua file trong lib/assets/pubspec.yaml; sua android/ thi xoa APK de build lai.
 powershell -NoProfile -Command "$a='%APK%'; if(!(Test-Path $a)){exit 1}; $t=(Get-Item $a).LastWriteTime; if(Get-ChildItem mobile\lib,mobile\assets,mobile\pubspec.yaml -Recurse -File | Where-Object LastWriteTime -gt $t | Select-Object -First 1){exit 1}; exit 0"
 if errorlevel 1 (
-    echo [4/5] Build APK release ^(chi build cho may ao x64^)...
+    echo [5/6] Build APK release ^(chi build cho may ao x64^)...
     pushd mobile
     call "%FLUTTER%" build apk --release --target-platform android-x64 || (popd & goto :fail)
     rem Tat Gradle daemon de tra ~800MB RAM cho may ao.
@@ -52,11 +56,11 @@ if errorlevel 1 (
     popd
     if exist "%STAMP%" del "%STAMP%"
 ) else (
-    echo [4/5] APK da moi nhat, bo qua build.
+    echo [5/6] APK da moi nhat, bo qua build.
 )
 
-rem --- 5. Doi may ao, cai app neu can, mo app ---
-echo [5/5] Doi may ao khoi dong xong...
+rem --- 6. Doi may ao, cai app neu can, mo app ---
+echo [6/6] Doi may ao khoi dong xong...
 "%ADB%" wait-for-device
 "%ADB%" shell "while [ -z $(getprop sys.boot_completed) ]; do sleep 1; done"
 set "NEED_INSTALL="
@@ -71,7 +75,7 @@ if defined NEED_INSTALL (
 
 set /a TRIES=0
 :wait_api
-curl -s -o nul %URL%/docs && (start "" "%URL%/docs" & goto :api_ok)
+curl -s -o nul -f %URL%/health && (start "" "%URL%/docs" & goto :api_ok)
 set /a TRIES+=1
 if %TRIES% lss 30 ("%SystemRoot%\System32\timeout.exe" /t 1 >nul & goto :wait_api)
 echo Canh bao: API chua len, xem cua so "Flood API".

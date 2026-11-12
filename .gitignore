@@ -24,3 +24,5 @@ __pycache__/
 # Operating system
 .DS_Store
 Thumbs.db
+# Backend uploaded report photos
+/backend/uploads/

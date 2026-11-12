@@ -1,0 +1,8 @@
+.git
+.venv
+mobile
+data
+ml/outputs
+backend/uploads
+backend/tests
+**/__pycache__

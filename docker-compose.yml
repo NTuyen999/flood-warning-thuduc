@@ -1,0 +1,40 @@
+# Dev:  docker compose up -d db          (only PostGIS; run the API from .venv)
+# Full: docker compose up -d --build     (PostGIS + API on http://127.0.0.1:8000/docs)
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_DB: flood
+      POSTGRES_USER: flood
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flood_dev_pw}
+    ports:
+      - "127.0.0.1:5433:5432"   # 5433 to avoid clashing with a local PostgreSQL
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # TCP check: the first-run init server listens on the unix socket only, so this
+      # stays unhealthy until the real server is up.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U flood -d flood"]
+      interval: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      DATABASE_URL: postgresql://flood:${POSTGRES_PASSWORD:-flood_dev_pw}@db:5432/flood
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - uploads:/app/backend/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:

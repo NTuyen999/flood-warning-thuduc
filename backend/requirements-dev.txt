@@ -1,0 +1,3 @@
+# Tests + the one-off OSM segment tool (not needed at runtime)
+pytest==9.2.0
+shapely==2.2.0
