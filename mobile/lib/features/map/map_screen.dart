@@ -217,6 +217,30 @@ class _MapTabState extends State<MapTab> {
         left: 12,
         right: 12,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (map.stale)
+            Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(children: [
+                Icon(Icons.warning_amber_rounded,
+                    color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Dữ liệu cũ (nguồn thời tiết chậm cập nhật)',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ]),
+            ),
           Card(
             child: ListTile(
               leading: Icon(riskIcon(map.worstLevel), color: riskColor(map.worstLevel), size: 36),

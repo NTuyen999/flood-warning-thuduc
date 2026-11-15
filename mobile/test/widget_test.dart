@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/widgets.dart';
+import 'package:mobile/data/models/report.dart';
 import 'package:mobile/data/models/road_segment.dart';
 import 'package:mobile/data/services/api.dart';
 import 'package:mobile/data/services/api_service.dart';
+import 'package:mobile/features/report/history_screen.dart';
 import 'package:mobile/features/report/report_screen.dart';
 import 'package:mobile/main.dart';
 
@@ -337,6 +339,84 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Máy chủ bảo trì'), findsOneWidget);
+    });
+  });
+
+  group('UX and stability (T5)', () {
+    testWidgets('renders properly on small screen (360x640) without overflow', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      await tester.pumpWidget(const FloodApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bản đồ nguy cơ'), findsOneWidget);
+
+      await tester.tap(find.text('Tuyến đường'));
+      await tester.pumpAndSettle();
+      expect(find.text('Kha Vạn Cân'), findsOneWidget);
+
+      await tester.tap(find.text('Cộng đồng'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ngập nhẹ'), findsOneWidget);
+    });
+
+    testWidgets('renders with large text scale factor (1.8) without overflow', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.8)),
+          child: const FloodApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bản đồ nguy cơ'), findsOneWidget);
+      await tester.tap(find.text('Tuyến đường'));
+      await tester.pumpAndSettle();
+      expect(find.text('Kha Vạn Cân'), findsOneWidget);
+    });
+
+    testWidgets('stale data displays warning banner', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final backend = useFakeBackend(tester);
+      final staleRisks = Map<String, Object?>.from(risks)..['stale'] = true;
+      backend.routes['GET /api/v1/map/risks'] = (200, staleRisks);
+
+      await tester.pumpWidget(const FloodApp());
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Dữ liệu cũ'), findsAtLeast(1));
+    });
+
+    testWidgets('report card handles report image network error smoothly', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      final reportWithImage = Report.fromJson({
+        'id': 99,
+        'segment_id': 'SEG01',
+        'lat': 10.85,
+        'lon': 106.77,
+        'flood_level': 'heavy',
+        'status': 'new',
+        'age_minutes': 5,
+        'note': 'Có ảnh đính kèm',
+        'image_url': '/uploads/broken.jpg',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ReportCard(reportWithImage, place: 'Kha Vạn Cân'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ngập nặng'), findsOneWidget);
+      expect(find.textContaining('Kha Vạn Cân'), findsOneWidget);
     });
   });
 }
