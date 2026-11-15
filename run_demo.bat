@@ -6,7 +6,7 @@ setlocal
 cd /d "%~dp0"
 set "URL=http://127.0.0.1:8000"
 set "AVD=Pixel_10a"
-set "PKG=com.example.mobile"
+set "PKG=com.floodwarning.thuduc"
 set "ADB=%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe"
 set "EMU=%LOCALAPPDATA%\Android\Sdk\emulator\emulator.exe"
 set "APK=mobile\build\app\outputs\flutter-apk\app-release.apk"

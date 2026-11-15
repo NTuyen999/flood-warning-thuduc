@@ -36,8 +36,38 @@ flutter test
 
 Test dùng backend giả ở tầng HTTP (`FakeBackend` trong [test/widget_test.dart](test/widget_test.dart)), nên chạy qua đúng code gọi API và đọc JSON của app.
 
+## Build APK Release & Ký Keystore
+
+### Build APK
+```bash
+# Debug APK
+flutter build apk --debug
+
+# Release APK
+flutter build apk --release --dart-define=API_URL=http://10.0.2.2:8000
+```
+
+### Cấu hình Ký Release (Tùy chọn)
+Mặc định nếu không tìm thấy file `android/key.properties`, app sẽ rơi về ký bằng **debug keystore** để thuận tiện demo (có in cảnh báo).
+
+Nếu muốn ký release chính thức:
+1. Tạo keystore bằng `keytool`:
+   ```bash
+   keytool -genkey -v -keystore android/app/upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+2. Tạo file `android/key.properties` với nội dung:
+   ```properties
+   storePassword=<mật_khẩu_keystore>
+   keyPassword=<mật_khẩu_key>
+   keyAlias=upload
+   storeFile=app/upload-keystore.jks
+   ```
+3. Chạy lại `flutter build apk --release`.
+
+*Lưu ý:* Cả `key.properties`, `*.jks` và `*.keystore` đã được liệt kê trong `.gitignore`, tuyệt đối không commit lên Git.
+
 ## Ghi chú
 
 - Nền bản đồ: mặc định dùng Esri World Street Map (`https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}`) với fallback CARTO. Có thể tùy chỉnh qua `--dart-define=TILE_URL=...` và `--dart-define=TILE_ATTRIBUTION=...`. Tự đảo màu khi máy ở chế độ tối. Nguồn bản đồ hiện tại chỉ phù hợp cho đồ án/demo; khi phát hành sản phẩm thật cần mua bản quyền hoặc chọn dịch vụ tile riêng.
-- `android:usesCleartextTraffic="true"` chỉ để gọi `http://` lúc dev. Khi backend có HTTPS thì bỏ đi.
+- `android:usesCleartextTraffic="true"` chỉ để gọi `http://` lúc dev và demo LAN. Khi triển khai bản sản phẩm có HTTPS thì phải bỏ đi.
 - Chưa cấu hình quyền vị trí/ảnh cho iOS (`Info.plist`).
