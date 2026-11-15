@@ -36,6 +36,15 @@ flutter test
 
 Test dùng backend giả ở tầng HTTP (`FakeBackend` trong [test/widget_test.dart](test/widget_test.dart)), nên chạy qua đúng code gọi API và đọc JSON của app.
 
+## Cấu hình Máy chủ API Linh hoạt
+
+Ngoài việc truyền `--dart-define=API_URL=...` lúc build, người dùng có thể đổi địa chỉ máy chủ trực tiếp khi ứng dụng đang chạy:
+1. Nhấn icon **(i) Về dự báo này** ở góc trên bên phải thanh AppBar.
+2. Tại mục **Cấu hình máy chủ**, chọn **Thay đổi**.
+3. Nhập URL máy chủ mới (ví dụ: `http://192.168.1.10:8000`).
+4. Nhấn **Kiểm tra kết nối** để gọi thử GET `/health` (hiển thị thông báo OK + `model_version`, hoặc báo lỗi tiếng Việt).
+5. Nhấn **Lưu** để áp dụng ngay mà không cần khởi động lại ứng dụng. URL sẽ được lưu vào `shared_preferences`.
+
 ## Build APK Release & Ký Keystore
 
 ### Build APK
@@ -65,6 +74,17 @@ Nếu muốn ký release chính thức:
 3. Chạy lại `flutter build apk --release`.
 
 *Lưu ý:* Cả `key.properties`, `*.jks` và `*.keystore` đã được liệt kê trong `.gitignore`, tuyệt đối không commit lên Git.
+
+## Xử lý Sự cố Thường gặp
+
+1. **Không kết nối được Backend:**
+   - Đảm bảo uvicorn chạy `--host 0.0.0.0`.
+   - Kiểm tra IP LAN máy tính (`ipconfig`).
+   - Vào màn "Máy chủ" trong app để thử kiểm tra kết nối.
+2. **GPS máy ảo báo nằm ngoài TP Thủ Đức:**
+   - Chạm tay trên bản đồ để chọn ghim thủ công, hoặc gán tọa độ cho emulator: `adb emu geo fix 106.7718 10.8505`.
+3. **Mạng chặn tile bản đồ:**
+   - App đã mặc định sử dụng Esri World Street Map và fallback CARTO, hỗ trợ tùy chỉnh qua `--dart-define=TILE_URL=...`.
 
 ## Ghi chú
 
