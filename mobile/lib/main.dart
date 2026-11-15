@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/risk_colors.dart';
 import 'core/widgets.dart';
 import 'data/models/report.dart';
 import 'data/models/road_segment.dart';
 import 'data/services/api.dart';
+import 'data/services/api_service.dart';
 import 'features/forecast/forecast_screen.dart';
 import 'features/map/map_screen.dart';
 import 'features/map/segments_screen.dart';
 import 'features/report/history_screen.dart';
 import 'features/report/report_screen.dart';
 
-void main() => runApp(const FloodApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final savedUrl = prefs.getString('api_url');
+  if (savedUrl != null && savedUrl.isNotEmpty) {
+    api.baseUrl = savedUrl;
+  }
+  runApp(const FloodApp());
+}
 
 ThemeData _theme(Brightness brightness) => ThemeData(
       colorScheme:
@@ -100,6 +110,15 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute<void>(
           builder: (_) => ForecastScreen(segment: segment, onReportSent: _load)));
 
+  void _openServerSettings() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => ServerSettingsDialog(
+        onSaved: _load,
+      ),
+    );
+  }
+
   void _showInfo(RiskMap map) => showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
@@ -135,6 +154,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 ]),
                 const SizedBox(height: 8),
                 const Text('Báo cáo tự hết hạn sau 6 giờ để bản đồ không hiển thị tin cũ.'),
+                const SectionTitle('Cấu hình máy chủ'),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.dns_outlined),
+                    title: const Text('Máy chủ API'),
+                    subtitle: Text(api.baseUrl, style: const TextStyle(fontSize: 12)),
+                    trailing: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _openServerSettings();
+                      },
+                      child: const Text('Thay đổi'),
+                    ),
+                  ),
+                ),
               ]),
             ),
           );
@@ -211,6 +245,189 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class ServerSettingsDialog extends StatefulWidget {
+  final VoidCallback onSaved;
+
+  const ServerSettingsDialog({super.key, required this.onSaved});
+
+  @override
+  State<ServerSettingsDialog> createState() => _ServerSettingsDialogState();
+}
+
+class _ServerSettingsDialogState extends State<ServerSettingsDialog> {
+  late final TextEditingController _controller;
+  bool _checking = false;
+  String? _healthResult;
+  bool _isError = false;
+  String? _validationError;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: api.baseUrl);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkConnection() async {
+    final err = ApiService.validateApiUrl(_controller.text);
+    if (err != null) {
+      setState(() {
+        _validationError = err;
+        _healthResult = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _validationError = null;
+      _checking = true;
+      _healthResult = null;
+    });
+
+    try {
+      final res = await api.checkHealth(_controller.text);
+      if (!mounted) return;
+      final modelVer = res['model_version'] ?? 'Không rõ';
+      setState(() {
+        _healthResult = 'Kết nối thành công! Phiên bản mô hình: $modelVer';
+        _isError = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _healthResult = '$e';
+        _isError = true;
+      });
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  void _useDefault() {
+    setState(() {
+      _controller.text = apiBaseUrl;
+      _validationError = null;
+      _healthResult = null;
+    });
+  }
+
+  Future<void> _save() async {
+    final err = ApiService.validateApiUrl(_controller.text);
+    if (err != null) {
+      setState(() {
+        _validationError = err;
+      });
+      return;
+    }
+
+    final newUrl = ApiService.sanitizeApiUrl(_controller.text);
+    api.baseUrl = newUrl;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('api_url', newUrl);
+
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    widget.onSaved();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Cấu hình Máy chủ'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                labelText: 'URL Máy chủ',
+                hintText: 'http://192.168.1.10:8000',
+                errorText: _validationError,
+                border: const OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _checking ? null : _checkConnection,
+                  icon: _checking
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.network_check, size: 18),
+                  label: const Text('Kiểm tra kết nối'),
+                ),
+                TextButton(
+                  onPressed: _useDefault,
+                  child: const Text('Dùng mặc định'),
+                ),
+              ],
+            ),
+            if (_healthResult != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _isError
+                      ? Theme.of(context).colorScheme.errorContainer
+                      : Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _isError ? Icons.error_outline : Icons.check_circle_outline,
+                      color: _isError
+                          ? Theme.of(context).colorScheme.onErrorContainer
+                          : Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _healthResult!,
+                        style: TextStyle(
+                          color: _isError
+                              ? Theme.of(context).colorScheme.onErrorContainer
+                              : Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Hủy'),
+        ),
+        FilledButton(
+          onPressed: _save,
+          child: const Text('Lưu'),
+        ),
+      ],
     );
   }
 }

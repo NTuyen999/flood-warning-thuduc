@@ -85,11 +85,20 @@ class Pill extends StatelessWidget {
           color: color.withValues(alpha: 0.16),
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 4),
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
-        ]),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       );
 }
 

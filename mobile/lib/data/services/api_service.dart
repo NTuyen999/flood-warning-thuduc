@@ -31,6 +31,60 @@ class ApiService {
               receiveTimeout: const Duration(seconds: 20),
             ));
 
+  String get baseUrl => _dio.options.baseUrl;
+
+  set baseUrl(String url) {
+    _dio.options.baseUrl = sanitizeApiUrl(url);
+  }
+
+  static String? validateApiUrl(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return 'Vui lòng nhập URL máy chủ';
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      return 'URL phải bắt đầu bằng http:// hoặc https://';
+    }
+    try {
+      final uri = Uri.parse(trimmed);
+      if (!uri.hasAuthority || uri.host.isEmpty) {
+        return 'Cấu trúc URL không hợp lệ';
+      }
+    } catch (_) {
+      return 'Cấu trúc URL không hợp lệ';
+    }
+    return null;
+  }
+
+  static String sanitizeApiUrl(String input) {
+    var trimmed = input.trim();
+    while (trimmed.endsWith('/')) {
+      trimmed = trimmed.substring(0, trimmed.length - 1);
+    }
+    return trimmed;
+  }
+
+  Future<Map<String, dynamic>> checkHealth([String? targetUrl]) async {
+    final currentUrl = _dio.options.baseUrl;
+    if (targetUrl != null && targetUrl.trim().isNotEmpty) {
+      _dio.options.baseUrl = sanitizeApiUrl(targetUrl);
+    }
+    try {
+      final res = await _dio.get('/health');
+      if (res.data is Map) {
+        return Map<String, dynamic>.from(res.data as Map);
+      }
+      throw ApiException('Máy chủ trả về dữ liệu không hợp lệ.');
+    } on DioException catch (e) {
+      throw ApiException(_message(e), e.response?.statusCode);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.');
+    } finally {
+      if (targetUrl != null && targetUrl.trim().isNotEmpty) {
+        _dio.options.baseUrl = currentUrl;
+      }
+    }
+  }
+
   Future<T> _call<T>(Future<Response<dynamic>> Function() request, T Function(dynamic) parse) async {
     try {
       return parse((await request()).data);

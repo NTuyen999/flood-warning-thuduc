@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/widgets.dart';
 import 'package:mobile/data/models/road_segment.dart';
 import 'package:mobile/data/services/api.dart';
@@ -267,6 +268,75 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Vị trí nằm ngoài TP Thủ Đức'), findsOneWidget);
       expect(results, isEmpty); // still on the form
+    });
+  });
+
+  group('server settings dialog', () {
+    testWidgets('valid URL changes api.baseUrl and saves', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final backend = useFakeBackend(tester);
+      backend.routes['GET /health'] = (200, {'status': 'ok', 'model_version': 'xgb-final-1234'});
+      await tester.pumpWidget(const FloodApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Về dự báo này'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Thay đổi'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cấu hình Máy chủ'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'http://192.168.1.50:8000');
+      await tester.tap(find.text('Kiểm tra kết nối'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('xgb-final-1234'), findsOneWidget);
+
+      await tester.tap(find.text('Lưu'));
+      await tester.pumpAndSettle();
+
+      expect(api.baseUrl, 'http://192.168.1.50:8000');
+    });
+
+    testWidgets('invalid URL shows error and refuses to save', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      await tester.pumpWidget(const FloodApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Về dự báo này'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Thay đổi'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'invalid-url');
+      await tester.tap(find.text('Lưu'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('URL phải bắt đầu bằng http:// hoặc https://'), findsOneWidget);
+      expect(find.text('Cấu hình Máy chủ'), findsOneWidget);
+    });
+
+    testWidgets('health check failure displays error message', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final backend = useFakeBackend(tester);
+      backend.routes['GET /health'] = (503, {'detail': 'Máy chủ bảo trì'});
+
+      await tester.pumpWidget(const FloodApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Về dự báo này'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Thay đổi'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Kiểm tra kết nối'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Máy chủ bảo trì'), findsOneWidget);
     });
   });
 }
