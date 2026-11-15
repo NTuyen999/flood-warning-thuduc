@@ -38,6 +38,6 @@ Test dùng backend giả ở tầng HTTP (`FakeBackend` trong [test/widget_test.
 
 ## Ghi chú
 
-- Nền bản đồ: tile chuẩn của OpenStreetMap (© OpenStreetMap contributors), tự đảo màu khi máy ở chế độ tối. Chỉ phù hợp lưu lượng nhỏ (demo); khi phát hành thật cần dùng nhà cung cấp tile riêng.
+- Nền bản đồ: mặc định dùng Esri World Street Map (`https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}`) với fallback CARTO. Có thể tùy chỉnh qua `--dart-define=TILE_URL=...` và `--dart-define=TILE_ATTRIBUTION=...`. Tự đảo màu khi máy ở chế độ tối. Nguồn bản đồ hiện tại chỉ phù hợp cho đồ án/demo; khi phát hành sản phẩm thật cần mua bản quyền hoặc chọn dịch vụ tile riêng.
 - `android:usesCleartextTraffic="true"` chỉ để gọi `http://` lúc dev. Khi backend có HTTPS thì bỏ đi.
 - Chưa cấu hình quyền vị trí/ảnh cho iOS (`Info.plist`).
