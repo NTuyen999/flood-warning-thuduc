@@ -85,11 +85,20 @@ class Pill extends StatelessWidget {
           color: color.withValues(alpha: 0.16),
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 4),
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
-        ]),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       );
 }
 
@@ -105,7 +114,19 @@ class SectionTitle extends StatelessWidget {
       );
 }
 
-/// flutter_map with the OpenStreetMap basemap (colours inverted in dark mode) and its attribution.
+/// Tile URL for map tiles. Default is Esri World Street Map.
+const tileUrl = String.fromEnvironment(
+  'TILE_URL',
+  defaultValue: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+);
+
+/// Attribution text for map tiles.
+const tileAttribution = String.fromEnvironment(
+  'TILE_ATTRIBUTION',
+  defaultValue: '© Esri, HERE, Garmin, © OpenStreetMap contributors',
+);
+
+/// flutter_map with tile basemap (colours inverted in dark mode) and its attribution.
 class BaseMap extends StatelessWidget {
   /// Tests turn tiles off: `flutter test` has no network.
   static bool tiles = true;
@@ -122,8 +143,10 @@ class BaseMap extends StatelessWidget {
     return FlutterMap(mapController: controller, options: options, children: [
       if (tiles)
         TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.mobile',
+          urlTemplate: tileUrl,
+          fallbackUrl: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+          subdomains: const ['a', 'b', 'c', 'd'],
+          userAgentPackageName: 'com.floodwarning.thuduc',
           tileBuilder: dark ? darkModeTileBuilder : null,
         ),
       ...children,
@@ -134,7 +157,7 @@ class BaseMap extends StatelessWidget {
           color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            child: Text('© OpenStreetMap contributors',
+            child: Text(tileAttribution,
                 style: TextStyle(fontSize: 10), overflow: TextOverflow.ellipsis),
           ),
         ),

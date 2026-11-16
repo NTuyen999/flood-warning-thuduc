@@ -39,13 +39,54 @@ class ReportCard extends StatelessWidget {
                     context: context,
                     builder: (_) => Dialog(
                       clipBehavior: Clip.antiAlias,
-                      child: InteractiveViewer(child: Image.network(url)),
+                      child: InteractiveViewer(
+                        child: Image.network(
+                          url,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return const Padding(
+                              padding: EdgeInsets.all(32),
+                              child: CircularProgressIndicator(),
+                            );
+                          },
+                          errorBuilder: (_, _, _) => const Padding(
+                            padding: EdgeInsets.all(32),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                                SizedBox(height: 8),
+                                Text('Không tải được ảnh'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.network(url, width: 52, height: 52, fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => avatar),
+                    child: Image.network(
+                      url,
+                      width: 52,
+                      height: 52,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          width: 52,
+                          height: 52,
+                          alignment: Alignment.center,
+                          color: color.withValues(alpha: 0.16),
+                          child: const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, _, _) => avatar,
+                    ),
                   ),
                 ),
           title: Text(floodLabel(report.floodLevel)),

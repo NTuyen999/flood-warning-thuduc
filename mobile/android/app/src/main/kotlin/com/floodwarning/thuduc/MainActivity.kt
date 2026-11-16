@@ -1,4 +1,4 @@
-package com.example.mobile
+package com.floodwarning.thuduc
 
 import io.flutter.embedding.android.FlutterActivity
 
