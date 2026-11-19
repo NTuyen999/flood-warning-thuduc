@@ -1,0 +1,465 @@
+{
+  "is_demo": true,
+  "nodes": [
+    {
+      "id": "N_P1",
+      "name": "Đầu Kha Vạn Cân (đoạn 1)",
+      "coord": [
+        106.722805,
+        10.829985
+      ],
+      "route_point": "P1"
+    },
+    {
+      "id": "N_AL02_J",
+      "name": "Nút giao hẻm B",
+      "coord": [
+        106.724755,
+        10.831557
+      ],
+      "route_point": null
+    },
+    {
+      "id": "N_AL04_J",
+      "name": "Nút giao hẻm D",
+      "coord": [
+        106.725516,
+        10.8322
+      ],
+      "route_point": null
+    },
+    {
+      "id": "N_J1",
+      "name": "Ngã giao hẻm C (J1)",
+      "coord": [
+        106.726907,
+        10.833282
+      ],
+      "route_point": null
+    },
+    {
+      "id": "N_MID",
+      "name": "Giữa Kha Vạn Cân (nối SEG01-SEG02)",
+      "coord": [
+        106.728447,
+        10.834584
+      ],
+      "route_point": null
+    },
+    {
+      "id": "N_J2",
+      "name": "Ngã giao hẻm tắt (J2)",
+      "coord": [
+        106.730421,
+        10.836188
+      ],
+      "route_point": "J2"
+    },
+    {
+      "id": "N_AL01_J",
+      "name": "Nút giao hẻm A",
+      "coord": [
+        106.732539,
+        10.837881
+      ],
+      "route_point": null
+    },
+    {
+      "id": "N_P2",
+      "name": "Cuối Kha Vạn Cân (đoạn 2)",
+      "coord": [
+        106.734318,
+        10.838849
+      ],
+      "route_point": "P2"
+    },
+    {
+      "id": "N_H1",
+      "name": "Cuối hẻm cụt A (AL01)",
+      "coord": [
+        106.731439,
+        10.838981
+      ],
+      "route_point": "H1"
+    },
+    {
+      "id": "N_H2",
+      "name": "Cuối hẻm cụt B (AL02)",
+      "coord": [
+        106.723655,
+        10.832657
+      ],
+      "route_point": "H2"
+    },
+    {
+      "id": "N_H4",
+      "name": "Cuối hẻm cụt D (AL04)",
+      "coord": [
+        106.726616,
+        10.8311
+      ],
+      "route_point": "H4"
+    }
+  ],
+  "edges": [
+    {
+      "id": "E_SEG01_1",
+      "segment_id": "SEG01",
+      "name": "Kha Vạn Cân (đoạn 1 - phần 1)",
+      "kind": "main",
+      "from_node": "N_P1",
+      "to_node": "N_AL02_J",
+      "length_m": 275.6,
+      "coordinates": [
+        [
+          106.722805,
+          10.829985
+        ],
+        [
+          106.723221,
+          10.830302
+        ],
+        [
+          106.723332,
+          10.830397
+        ],
+        [
+          106.723744,
+          10.830729
+        ],
+        [
+          106.724073,
+          10.830994
+        ],
+        [
+          106.72455,
+          10.831382
+        ],
+        [
+          106.724755,
+          10.831557
+        ]
+      ],
+      "inherits_from": null,
+      "dead_end": false
+    },
+    {
+      "id": "E_SEG01_2",
+      "segment_id": "SEG01",
+      "name": "Kha Vạn Cân (đoạn 1 - phần 2)",
+      "kind": "main",
+      "from_node": "N_AL02_J",
+      "to_node": "N_AL04_J",
+      "length_m": 109.6,
+      "coordinates": [
+        [
+          106.724755,
+          10.831557
+        ],
+        [
+          106.725027,
+          10.831788
+        ],
+        [
+          106.725318,
+          10.832037
+        ],
+        [
+          106.725516,
+          10.8322
+        ]
+      ],
+      "inherits_from": null,
+      "dead_end": false
+    },
+    {
+      "id": "E_SEG01_3",
+      "segment_id": "SEG01",
+      "name": "Kha Vạn Cân (đoạn 1 - phần 3)",
+      "kind": "main",
+      "from_node": "N_AL04_J",
+      "to_node": "N_J1",
+      "length_m": 193.8,
+      "coordinates": [
+        [
+          106.725516,
+          10.8322
+        ],
+        [
+          106.726009,
+          10.832569
+        ],
+        [
+          106.726576,
+          10.833032
+        ],
+        [
+          106.726889,
+          10.833268
+        ],
+        [
+          106.726907,
+          10.833282
+        ]
+      ],
+      "inherits_from": null,
+      "dead_end": false
+    },
+    {
+      "id": "E_SEG01_4",
+      "segment_id": "SEG01",
+      "name": "Kha Vạn Cân (đoạn 1 - phần 4)",
+      "kind": "main",
+      "from_node": "N_J1",
+      "to_node": "N_MID",
+      "length_m": 222.4,
+      "coordinates": [
+        [
+          106.726907,
+          10.833282
+        ],
+        [
+          106.726919,
+          10.83329
+        ],
+        [
+          106.727133,
+          10.833426
+        ],
+        [
+          106.727402,
+          10.833705
+        ],
+        [
+          106.727802,
+          10.834041
+        ],
+        [
+          106.728447,
+          10.834584
+        ]
+      ],
+      "inherits_from": null,
+      "dead_end": false
+    },
+    {
+      "id": "E_SEG02_1",
+      "segment_id": "SEG02",
+      "name": "Kha Vạn Cân (đoạn 2 - phần 1)",
+      "kind": "main",
+      "from_node": "N_MID",
+      "to_node": "N_J2",
+      "length_m": 279.8,
+      "coordinates": [
+        [
+          106.728447,
+          10.834584
+        ],
+        [
+          106.728667,
+          10.834769
+        ],
+        [
+          106.729892,
+          10.835749
+        ],
+        [
+          106.730191,
+          10.835986
+        ],
+        [
+          106.730421,
+          10.836188
+        ]
+      ],
+      "inherits_from": null,
+      "dead_end": false
+    },
+    {
+      "id": "E_SEG02_2",
+      "segment_id": "SEG02",
+      "name": "Kha Vạn Cân (đoạn 2 - phần 2)",
+      "kind": "main",
+      "from_node": "N_J2",
+      "to_node": "N_AL01_J",
+      "length_m": 298.6,
+      "coordinates": [
+        [
+          106.730421,
+          10.836188
+        ],
+        [
+          106.730632,
+          10.836368
+        ],
+        [
+          106.73076,
+          10.836507
+        ],
+        [
+          106.731215,
+          10.836825
+        ],
+        [
+          106.731581,
+          10.837129
+        ],
+        [
+          106.732539,
+          10.837881
+        ]
+      ],
+      "inherits_from": null,
+      "dead_end": false
+    },
+    {
+      "id": "E_SEG02_3",
+      "segment_id": "SEG02",
+      "name": "Kha Vạn Cân (đoạn 2 - phần 3)",
+      "kind": "main",
+      "from_node": "N_AL01_J",
+      "to_node": "N_P2",
+      "length_m": 222.5,
+      "coordinates": [
+        [
+          106.732539,
+          10.837881
+        ],
+        [
+          106.732733,
+          10.837975
+        ],
+        [
+          106.733067,
+          10.83818
+        ],
+        [
+          106.733146,
+          10.838229
+        ],
+        [
+          106.733599,
+          10.838504
+        ],
+        [
+          106.733914,
+          10.838681
+        ],
+        [
+          106.734318,
+          10.838849
+        ]
+      ],
+      "inherits_from": null,
+      "dead_end": false
+    },
+    {
+      "id": "AL01",
+      "segment_id": "AL01",
+      "name": "Hẻm 112 Kha Vạn Cân (Hẻm cụt A)",
+      "kind": "alley",
+      "from_node": "N_AL01_J",
+      "to_node": "N_H1",
+      "length_m": 171.4,
+      "coordinates": [
+        [
+          106.732539,
+          10.837881
+        ],
+        [
+          106.731939,
+          10.838481
+        ],
+        [
+          106.731439,
+          10.838981
+        ]
+      ],
+      "inherits_from": "SEG02",
+      "dead_end": true
+    },
+    {
+      "id": "AL02",
+      "segment_id": "AL02",
+      "name": "Hẻm 45 Kha Vạn Cân (Hẻm cụt B)",
+      "kind": "alley",
+      "from_node": "N_AL02_J",
+      "to_node": "N_H2",
+      "length_m": 171.4,
+      "coordinates": [
+        [
+          106.724755,
+          10.831557
+        ],
+        [
+          106.724155,
+          10.832157
+        ],
+        [
+          106.723655,
+          10.832657
+        ]
+      ],
+      "inherits_from": null,
+      "dead_end": true
+    },
+    {
+      "id": "AL03",
+      "segment_id": "AL03",
+      "name": "Hẻm liên thông 78 (Đường vòng tránh ngập)",
+      "kind": "alley",
+      "from_node": "N_J1",
+      "to_node": "N_J2",
+      "length_m": 865.8,
+      "coordinates": [
+        [
+          106.726907,
+          10.833282
+        ],
+        [
+          106.7258,
+          10.8346
+        ],
+        [
+          106.728,
+          10.8368
+        ],
+        [
+          106.7298,
+          10.8372
+        ],
+        [
+          106.730421,
+          10.836188
+        ]
+      ],
+      "inherits_from": null,
+      "dead_end": false
+    },
+    {
+      "id": "AL04",
+      "segment_id": "AL04",
+      "name": "Hẻm 60 Kha Vạn Cân (Hẻm cụt D)",
+      "kind": "alley",
+      "from_node": "N_AL04_J",
+      "to_node": "N_H4",
+      "length_m": 171.4,
+      "coordinates": [
+        [
+          106.725516,
+          10.8322
+        ],
+        [
+          106.726116,
+          10.8316
+        ],
+        [
+          106.726616,
+          10.8311
+        ]
+      ],
+      "inherits_from": null,
+      "dead_end": true
+    }
+  ]
+}
