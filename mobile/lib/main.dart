@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/demo_mode.dart';
 import 'core/risk_colors.dart';
 import 'core/widgets.dart';
 import 'data/models/report.dart';
@@ -154,6 +155,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 ]),
                 const SizedBox(height: 8),
                 const Text('Báo cáo tự hết hạn sau 6 giờ để bản đồ không hiển thị tin cũ.'),
+                const SectionTitle('Chế độ mô phỏng'),
+                ValueListenableBuilder<DemoState>(
+                  valueListenable: demoMode,
+                  builder: (context, demoState, _) => Card(
+                    child: SwitchListTile(
+                      secondary: const Icon(Icons.science_outlined),
+                      title: const Text('Chế độ mô phỏng & Gợi ý đường đi'),
+                      subtitle: const Text('Thử nghiệm 3 kịch bản mưa, xem hẻm cụt và gợi ý tuyến đường ít rủi ro'),
+                      value: demoState.enabled,
+                      onChanged: (val) {
+                        demoMode.setEnabled(val);
+                        Navigator.pop(context);
+                        _load();
+                      },
+                    ),
+                  ),
+                ),
                 const SectionTitle('Cấu hình máy chủ'),
                 Card(
                   child: ListTile(

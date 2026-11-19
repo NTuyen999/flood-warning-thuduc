@@ -3,15 +3,18 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../core/demo_mode.dart';
 import '../../core/risk_colors.dart';
 import '../../core/widgets.dart';
 import '../../data/models/report.dart';
 import '../../data/models/road_segment.dart';
+import '../../data/services/api.dart';
 import '../report/history_screen.dart';
+import '../route/route_screen.dart';
 
 final _hm = DateFormat('HH:mm');
 
-/// Risk map tab: coloured road segments, community report markers, hour picker.
+/// Risk map tab: coloured road segments, community report markers, hour picker, simulation mode.
 class MapTab extends StatefulWidget {
   final RiskMap map;
   final List<Report> reports;
@@ -38,12 +41,42 @@ class _MapTabState extends State<MapTab> {
   final LayerHitNotifier<String> _hit = ValueNotifier(null);
   final _controller = MapController();
   LatLng? _me;
+  RiskMap? _demoMap;
+
+  @override
+  void initState() {
+    super.initState();
+    demoMode.addListener(_onDemoModeChanged);
+    if (demoMode.value.enabled) _loadDemoMap();
+  }
 
   @override
   void dispose() {
+    demoMode.removeListener(_onDemoModeChanged);
     _hit.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onDemoModeChanged() {
+    if (demoMode.value.enabled) {
+      _loadDemoMap();
+    } else {
+      if (mounted) setState(() => _demoMap = null);
+    }
+  }
+
+  Future<void> _loadDemoMap() async {
+    try {
+      final map = await api.getDemoMap(
+        scenario: demoMode.value.scenario,
+        horizon: widget.horizon,
+      );
+      if (!mounted) return;
+      setState(() {
+        _demoMap = map;
+      });
+    } catch (_) {}
   }
 
   Future<void> _goToMe() async {
@@ -56,6 +89,44 @@ class _MapTabState extends State<MapTab> {
     }
     setState(() => _me = here);
     _controller.move(here, 15);
+  }
+
+  void _openRouteScreen() {
+    if (!demoMode.value.enabled) {
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          icon: const Icon(Icons.science, size: 36, color: Colors.amber),
+          title: const Text('Gợi ý đường đi'),
+          content: const Text(
+            'Tính năng gợi ý đường đi hiện chạy trên khu vực mạng mô phỏng thu nhỏ TP Thủ Đức.\n\n'
+            'Bật chế độ mô phỏng để trải nghiệm tính năng này?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                demoMode.setEnabled(true);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(builder: (_) => const RouteScreen()),
+                );
+              },
+              child: const Text('Bật chế độ mô phỏng'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute<void>(builder: (_) => const RouteScreen()),
+      );
+    }
   }
 
   void _showSegment(RoadSegment s) => showModalBottomSheet<void>(
@@ -80,10 +151,57 @@ class _MapTabState extends State<MapTab> {
                     Pill.risk(s.level),
                   ]),
                   const SizedBox(height: 8),
+
+                  // Alley & simulation tags
+                  if (s.kind == 'alley') ...[
+                    Row(
+                      children: [
+                        if (s.deadEnd)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: Pill(Icons.do_not_disturb_on, 'Hẻm cụt', Colors.purple),
+                          ),
+                        Pill(
+                          Icons.alt_route,
+                          s.levelSource.startsWith('inherited:')
+                              ? 'Ngập tràn từ đường chính ${s.parentSegmentId}'
+                              : 'Hẻm tự ngập',
+                          Colors.blueGrey,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  if (s.blocked)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.block, color: Colors.red, size: 18),
+                            SizedBox(width: 8),
+                            Text('KHÔNG VÀO ĐƯỢC (ĐOẠN BỊ CHẶN)',
+                                style: TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+
                   Text(riskSentence(s.level)),
                   if (s.probability != null)
                     Text('Khả năng mưa lớn ${_horizonText()}: ${percent(s.probability!)}',
                         style: text.bodySmall),
+
                   if (s.activeReports > 0) ...[
                     const SizedBox(height: 8),
                     Pill(
@@ -94,13 +212,25 @@ class _MapTabState extends State<MapTab> {
                   ],
                   const SizedBox(height: 16),
                   Row(children: [
-                    Expanded(
-                      child: FilledButton.tonalIcon(
-                        onPressed: () => go(widget.onReport),
-                        icon: const Icon(Icons.add_location_alt),
-                        label: const Text('Báo cáo'),
+                    if (!s.isDemo)
+                      Expanded(
+                        child: FilledButton.tonalIcon(
+                          onPressed: () => go(widget.onReport),
+                          icon: const Icon(Icons.add_location_alt),
+                          label: const Text('Báo cáo'),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(sheet);
+                            _openRouteScreen();
+                          },
+                          icon: const Icon(Icons.navigation),
+                          label: const Text('Chỉ đường'),
+                        ),
                       ),
-                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: FilledButton.icon(
@@ -123,19 +253,24 @@ class _MapTabState extends State<MapTab> {
         builder: (_) => SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
-            child: ReportCard(r, place: widget.map.segmentName(r.segmentId)),
+            child: ReportCard(r, place: (demoMode.value.enabled ? _demoMap : widget.map)?.segmentName(r.segmentId)),
           ),
         ),
       );
 
-  String _horizonText() => widget.horizon == null
-      ? 'trong 6 giờ tới'
-      : 'lúc ${_hm.format(widget.map.issuedAt.add(Duration(hours: widget.horizon!)))}';
+  String _horizonText() {
+    final map = demoMode.value.enabled ? (_demoMap ?? widget.map) : widget.map;
+    return widget.horizon == null
+        ? 'trong 6 giờ tới'
+        : 'lúc ${_hm.format(map.issuedAt.add(Duration(hours: widget.horizon!)))}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final map = widget.map;
+    final isDemo = demoMode.value.enabled;
+    final map = isDemo ? (_demoMap ?? widget.map) : widget.map;
     final scheme = Theme.of(context).colorScheme;
+
     return Stack(children: [
       BaseMap(
         controller: _controller,
@@ -156,21 +291,49 @@ class _MapTabState extends State<MapTab> {
             },
             child: PolylineLayer<String>(
               hitNotifier: _hit,
-              minimumHitbox: 24, // finger-sized, the lines are only 7 px wide
+              minimumHitbox: 24,
               polylines: [
                 for (final s in map.segments)
                   Polyline<String>(
                     points: s.points,
-                    strokeWidth: 7,
+                    strokeWidth: s.kind == 'alley' ? 5 : 7,
+                    pattern: s.kind == 'alley'
+                        ? StrokePattern.dashed(segments: [10.0, 6.0])
+                        : const StrokePattern.solid(),
                     color: riskColor(s.level),
-                    borderStrokeWidth: 2,
-                    borderColor: Colors.white,
+                    borderStrokeWidth: s.blocked ? 3.5 : 2,
+                    borderColor: s.blocked ? Colors.red.shade900 : Colors.white,
                     hitValue: s.id,
                   ),
               ],
             ),
           ),
           MarkerLayer(markers: [
+            // Dead end icons for alley endpoints
+            for (final s in map.segments)
+              if (s.deadEnd && s.points.isNotEmpty)
+                Marker(
+                  point: s.points.last,
+                  width: 28,
+                  height: 28,
+                  child: Semantics(
+                    label: 'Hẻm cụt: ${s.name}',
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(blurRadius: 3, color: Colors.black26)],
+                      ),
+                      child: Icon(
+                        Icons.do_not_disturb_on,
+                        size: 20,
+                        color: riskColor(s.level),
+                      ),
+                    ),
+                  ),
+                ),
+
+            // Community reports markers
             for (final r in widget.reports.where((r) => r.active))
               Marker(
                 point: r.location,
@@ -194,6 +357,7 @@ class _MapTabState extends State<MapTab> {
                   ),
                 ),
               ),
+
             if (_me != null)
               Marker(
                 point: _me!,
@@ -211,13 +375,62 @@ class _MapTabState extends State<MapTab> {
           ]),
         ],
       ),
-      // Status banner + hour picker
+
+      // Status banner + hour picker + simulation controls
       Positioned(
         top: 8,
         left: 12,
         right: 12,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          if (map.stale)
+          if (isDemo) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(children: [
+                Icon(Icons.science,
+                    color: Theme.of(context).colorScheme.onTertiaryContainer, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'ĐANG XEM DỮ LIỆU MÔ PHỎNG – không phải dự báo thật',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onTertiaryContainer,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final sc in [
+                    ('none', 'Không mưa'),
+                    ('moderate', 'Mưa vừa'),
+                    ('heavy', 'Mưa nhiều'),
+                  ])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        label: Text(sc.$2),
+                        selected: demoMode.value.scenario == sc.$1,
+                        onSelected: (_) {
+                          demoMode.setScenario(sc.$1);
+                          _loadDemoMap();
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+          ] else if (map.stale)
             Container(
               margin: const EdgeInsets.only(bottom: 6),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -241,10 +454,13 @@ class _MapTabState extends State<MapTab> {
                 ),
               ]),
             ),
+
           Card(
             child: ListTile(
               leading: Icon(riskIcon(map.worstLevel), color: riskColor(map.worstLevel), size: 36),
-              title: Text('Nguy cơ mưa lớn: ${riskLabel(map.worstLevel)}'),
+              title: Text(isDemo
+                  ? 'Kịch bản mô phỏng: ${riskLabel(map.worstLevel)}'
+                  : 'Nguy cơ mưa lớn: ${riskLabel(map.worstLevel)}'),
               subtitle: Text(map.stale
                   ? 'Dữ liệu cũ từ ${_hm.format(map.issuedAt)}: nguồn thời tiết đang lỗi'
                   : 'Cập nhật ${_hm.format(map.issuedAt)} · ${_horizonText()}'),
@@ -261,22 +477,39 @@ class _MapTabState extends State<MapTab> {
                         ? 'Cả 6 giờ'
                         : _hm.format(map.issuedAt.add(Duration(hours: h)))),
                     selected: widget.horizon == h,
-                    onSelected: (_) => widget.onHorizon(h),
+                    onSelected: (_) {
+                      widget.onHorizon(h);
+                      if (isDemo) _loadDemoMap();
+                    },
                   ),
                 ),
             ]),
           ),
         ]),
       ),
+
       Positioned(left: 12, bottom: 28, child: _Legend(map.legend)),
+
+      // Floating Action Buttons (Route & My Location)
       Positioned(
         right: 16,
         bottom: 88,
-        child: FloatingActionButton.small(
-          heroTag: 'me',
-          tooltip: 'Vị trí của tôi',
-          onPressed: _goToMe,
-          child: const Icon(Icons.my_location),
+        child: Column(
+          children: [
+            FloatingActionButton.small(
+              heroTag: 'route',
+              tooltip: 'Gợi ý đường đi',
+              onPressed: _openRouteScreen,
+              child: const Icon(Icons.navigation),
+            ),
+            const SizedBox(height: 8),
+            FloatingActionButton.small(
+              heroTag: 'me',
+              tooltip: 'Vị trí của tôi',
+              onPressed: _goToMe,
+              child: const Icon(Icons.my_location),
+            ),
+          ],
         ),
       ),
     ]);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/demo_mode.dart';
 import '../../core/risk_colors.dart';
 import '../../core/widgets.dart';
 import '../../data/models/forecast.dart';
@@ -30,6 +31,10 @@ class _ForecastScreenState extends State<ForecastScreen> {
 
   Future<(Forecast, Weather?, List<Report>)> _load() async {
     final id = widget.segment.id;
+    if (demoMode.value.enabled) {
+      final forecast = await api.getDemoForecast(id, scenario: demoMode.value.scenario);
+      return (forecast, null, <Report>[]);
+    }
     // Weather and reports are extras: the forecast still shows when they fail.
     final weather = api.getWeather().then<Weather?>((w) => w).catchError((_) => null);
     final reports = api.getReports(segmentId: id).catchError((_) => <Report>[]);
