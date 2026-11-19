@@ -5,13 +5,17 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile/core/demo_mode.dart';
 import 'package:mobile/core/widgets.dart';
+import 'package:mobile/data/models/demo.dart';
 import 'package:mobile/data/models/report.dart';
 import 'package:mobile/data/models/road_segment.dart';
 import 'package:mobile/data/services/api.dart';
 import 'package:mobile/data/services/api_service.dart';
+import 'package:mobile/features/map/map_screen.dart';
 import 'package:mobile/features/report/history_screen.dart';
 import 'package:mobile/features/report/report_screen.dart';
+import 'package:mobile/features/route/route_screen.dart';
 import 'package:mobile/main.dart';
 
 /// Answers Dio requests from a "METHOD /path" -> (status, json) table, like the backend.
@@ -24,7 +28,18 @@ class FakeBackend implements HttpClientAdapter {
   Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? requestStream,
       Future<void>? cancelFuture) async {
     requests.add(options);
-    final route = routes['${options.method} ${options.path}'];
+    var fullPath = options.path;
+    if (options.queryParameters.isNotEmpty) {
+      final queryStr = options.queryParameters.entries
+          .where((e) => e.value != null)
+          .map((e) => '${e.key}=${e.value}')
+          .join('&');
+      if (queryStr.isNotEmpty) {
+        fullPath = '$fullPath?$queryStr';
+      }
+    }
+    var route = routes['${options.method} $fullPath'];
+    route ??= routes['${options.method} ${options.path}'];
     if (route == null) throw DioException.connectionError(requestOptions: options, reason: 'down');
     return ResponseBody.fromString(jsonEncode(route.$2), route.$1, headers: {
       Headers.contentTypeHeader: [Headers.jsonContentType],
@@ -96,13 +111,180 @@ final reports = {
   ],
 };
 
+final demoScenariosFixture = {
+  'is_demo': true,
+  'scenarios': [
+    {'id': 'none', 'label': 'Không mưa', 'description': 'Khô ráo', 'rain_mm_per_h': 0.0, 'banner': 'Thời tiết khô ráo'},
+    {'id': 'moderate', 'label': 'Mưa vừa', 'description': 'Mưa gia tăng', 'rain_mm_per_h': 18.5, 'banner': 'CẢNH BÁO MƯA VỪA'},
+    {'id': 'heavy', 'label': 'Mưa nhiều', 'description': 'Mưa lớn', 'rain_mm_per_h': 45.0, 'banner': 'CẢNH BÁO MƯA LỚN NGUY HIỂM'},
+  ],
+};
+
+final demoRoutePointsFixture = {
+  'is_demo': true,
+  'items': [
+    {'id': 'P1', 'node_id': 'N_P1', 'name': 'Đầu Kha Vạn Cân (đoạn 1)', 'coordinates': [106.722805, 10.829985]},
+    {'id': 'J2', 'node_id': 'N_J2', 'name': 'Ngã giao hẻm tắt (J2)', 'coordinates': [106.730421, 10.836188]},
+    {'id': 'P2', 'node_id': 'N_P2', 'name': 'Cuối Kha Vạn Cân (đoạn 2)', 'coordinates': [106.734318, 10.838849]},
+    {'id': 'H1', 'node_id': 'N_H1', 'name': 'Cuối hẻm cụt A (AL01)', 'coordinates': [106.731439, 10.838981]},
+    {'id': 'H2', 'node_id': 'N_H2', 'name': 'Cuối hẻm cụt B (AL02)', 'coordinates': [106.723655, 10.832657]},
+    {'id': 'H4', 'node_id': 'N_H4', 'name': 'Cuối hẻm cụt D (AL04)', 'coordinates': [106.726616, 10.831100]},
+  ],
+};
+
+final demoMapHeavyFixture = {
+  'type': 'FeatureCollection',
+  'issued_at': '2026-11-12T09:00:00+07:00',
+  'horizon': null,
+  'stale': false,
+  'model_version': 'demo-scenario',
+  'disclaimer': 'Chỉ báo mô phỏng.',
+  'legend': [
+    {'level': 'green', 'label': 'Thấp', 'max_probability': 0.1},
+    {'level': 'yellow', 'label': 'Trung bình', 'max_probability': 0.3},
+    {'level': 'orange', 'label': 'Cao', 'max_probability': 0.6},
+    {'level': 'red', 'label': 'Rất cao', 'max_probability': 1.0},
+  ],
+  'features': [
+    {
+      'type': 'Feature',
+      'geometry': {'type': 'LineString', 'coordinates': [[106.72, 10.83], [106.73, 10.84]]},
+      'properties': {
+        'segment_id': 'SEG01',
+        'name': 'Kha Vạn Cân (đoạn 1)',
+        'probability': 0.55,
+        'risk_level': 'orange',
+        'report_summary': {'active': 0, 'flooded': 0, 'latest_at': null},
+        'kind': 'main',
+        'dead_end': false,
+        'parent_segment_id': null,
+        'level_source': 'own',
+        'blocked': false,
+        'is_demo': true,
+      },
+    },
+    {
+      'type': 'Feature',
+      'geometry': {'type': 'LineString', 'coordinates': [[106.73, 10.84], [106.74, 10.85]]},
+      'properties': {
+        'segment_id': 'SEG02',
+        'name': 'Kha Vạn Cân (đoạn 2)',
+        'probability': 0.78,
+        'risk_level': 'red',
+        'report_summary': {'active': 1, 'flooded': 1, 'latest_at': '2026-11-12T09:15:00+07:00'},
+        'kind': 'main',
+        'dead_end': false,
+        'parent_segment_id': null,
+        'level_source': 'own',
+        'blocked': true,
+        'is_demo': true,
+      },
+    },
+    {
+      'type': 'Feature',
+      'geometry': {'type': 'LineString', 'coordinates': [[106.732, 10.837], [106.731, 10.838]]},
+      'properties': {
+        'segment_id': 'AL01',
+        'name': 'Hẻm 112 Kha Vạn Cân (Hẻm cụt A)',
+        'probability': 0.07,
+        'risk_level': 'red',
+        'report_summary': {'active': 0, 'flooded': 0, 'latest_at': null},
+        'kind': 'alley',
+        'dead_end': true,
+        'parent_segment_id': 'SEG02',
+        'level_source': 'inherited:SEG02',
+        'blocked': true,
+        'is_demo': true,
+      },
+    },
+  ],
+  'is_demo': true,
+};
+
+final demoRouteOkFixture = {
+  'status': 'ok',
+  'scenario': 'none',
+  'from_point': 'P1',
+  'to_point': 'J2',
+  'horizon': null,
+  'recommended': {
+    'length_m': 502.2,
+    'eta_min': 1.0,
+    'max_level': 'green',
+    'edges': ['E_SEG01_4', 'E_SEG02_1'],
+    'blocked_edges': [],
+    'geometry': {'type': 'LineString', 'coordinates': [[106.722, 10.829], [106.730, 10.836]]},
+  },
+  'shortest': null,
+  'messages': ['Tuyến đường thông suốt, không có đoạn bị cản trở nghiêm trọng.'],
+  'disclaimer': 'Dữ liệu và kết quả định tuyến mang tính MÔ PHỎNG.',
+  'is_demo': true,
+};
+
+final demoRouteDetourFixture = {
+  'status': 'detour',
+  'scenario': 'heavy',
+  'from_point': 'P1',
+  'to_point': 'J2',
+  'horizon': null,
+  'recommended': {
+    'length_m': 1444.8,
+    'eta_min': 2.9,
+    'max_level': 'orange',
+    'edges': ['E_SEG01_1', 'AL03'],
+    'blocked_edges': [],
+    'geometry': {'type': 'LineString', 'coordinates': [[106.722, 10.829], [106.730, 10.836]]},
+  },
+  'shortest': {
+    'length_m': 1081.2,
+    'eta_min': 2.2,
+    'max_level': 'red',
+    'edges': ['E_SEG02_1'],
+    'blocked_edges': ['E_SEG02_1'],
+    'geometry': {'type': 'LineString', 'coordinates': [[106.722, 10.829], [106.730, 10.836]]},
+  },
+  'messages': ['Đã tìm thấy tuyến đường vòng tránh các đoạn ngập lụt / nguy cơ cao.'],
+  'disclaimer': 'Dữ liệu và kết quả định tuyến mang tính MÔ PHỎNG.',
+  'is_demo': true,
+};
+
+final demoRouteUnreachableFixture = {
+  'status': 'unreachable',
+  'scenario': 'heavy',
+  'from_point': 'P1',
+  'to_point': 'P2',
+  'horizon': null,
+  'recommended': null,
+  'shortest': {
+    'length_m': 2000.0,
+    'eta_min': 4.0,
+    'max_level': 'red',
+    'edges': ['E_SEG02_1'],
+    'blocked_edges': ['E_SEG02_1'],
+    'geometry': {'type': 'LineString', 'coordinates': [[106.722, 10.829], [106.734, 10.838]]},
+  },
+  'messages': ['Không tìm thấy tuyến đường thông suốt do có đoạn bị ngập nặng (mức Đỏ/bị chặn). Cân nhắc hoãn di chuyển.'],
+  'disclaimer': 'Dữ liệu và kết quả định tuyến mang tính MÔ PHỎNG.',
+  'is_demo': true,
+};
+
 FakeBackend useFakeBackend(WidgetTester tester) {
+  demoMode.setEnabled(false);
   final backend = FakeBackend()
     ..routes.addAll({
       'GET /api/v1/map/risks': (200, risks),
       'GET /api/v1/reports': (200, reports),
       'GET /api/v1/forecast/SEG01': (200, forecast),
       'GET /api/v1/explain/SEG01': (200, explanation),
+      'GET /api/v1/demo/scenarios': (200, demoScenariosFixture),
+      'GET /api/v1/demo/route-points': (200, demoRoutePointsFixture),
+      'GET /api/v1/demo/map?scenario=heavy': (200, demoMapHeavyFixture),
+      'GET /api/v1/demo/map?scenario=none': (200, demoMapHeavyFixture),
+      'GET /api/v1/demo/map?scenario=moderate': (200, demoMapHeavyFixture),
+      'GET /api/v1/demo/forecast/SEG01?scenario=heavy': (200, forecast),
+      'GET /api/v1/demo/route?scenario=none&from=P1&to=J2': (200, demoRouteOkFixture),
+      'GET /api/v1/demo/route?scenario=heavy&from=P1&to=J2': (200, demoRouteDetourFixture),
+      'GET /api/v1/demo/route?scenario=heavy&from=P1&to=P2': (200, demoRouteUnreachableFixture),
     });
   api = ApiService(Dio(BaseOptions(baseUrl: 'http://test'))..httpClientAdapter = backend);
   BaseMap.tiles = false;
@@ -417,6 +599,236 @@ void main() {
 
       expect(find.text('Ngập nặng'), findsOneWidget);
       expect(find.textContaining('Kha Vạn Cân'), findsOneWidget);
+    });
+  });
+
+  group('simulation mode & routing (P6)', () {
+    tearDown(() {
+      demoMode.setEnabled(false);
+    });
+
+    test('parse demo models correctly', () {
+      final scenario = DemoScenario.fromJson({
+        'id': 'heavy',
+        'label': 'Mưa nhiều',
+        'description': 'Mưa lớn',
+        'rain_mm_per_h': 45.0,
+        'banner': 'CẢNH BÁO MƯA LỚN',
+      });
+      expect(scenario.id, 'heavy');
+      expect(scenario.rainMmPerH, 45.0);
+
+      final routePoint = RoutePoint.fromJson({
+        'id': 'P1',
+        'node_id': 'N_P1',
+        'name': 'Đầu Kha Vạn Cân',
+        'coordinates': [106.72, 10.82],
+      });
+      expect(routePoint.id, 'P1');
+      expect(routePoint.coordinates.latitude, 10.82);
+
+      final routeResult = RouteResult.fromJson({
+        'status': 'detour',
+        'scenario': 'heavy',
+        'from_point': 'P1',
+        'to_point': 'J2',
+        'messages': ['Đường vòng tránh ngập'],
+        'disclaimer': 'Mô phỏng',
+        'is_demo': true,
+        'recommended': {
+          'length_m': 1400.0,
+          'eta_min': 2.8,
+          'max_level': 'orange',
+          'edges': ['E1', 'E2'],
+          'blocked_edges': [],
+          'geometry': {
+            'type': 'LineString',
+            'coordinates': [
+              [106.72, 10.82],
+              [106.73, 10.83]
+            ]
+          }
+        }
+      });
+      expect(routeResult.status, 'detour');
+      expect(routeResult.recommended?.lengthM, 1400.0);
+    });
+
+    testWidgets('enabling simulation mode shows simulation top banner', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      demoMode.setEnabled(true);
+      await tester.pumpWidget(const FloodApp());
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('ĐANG XEM DỮ LIỆU MÔ PHỎNG'), findsOneWidget);
+    });
+
+    testWidgets('switching scenario updates scenario chip and map header', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      demoMode.setEnabled(true);
+      await tester.pumpWidget(const FloodApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mưa nhiều'), findsOneWidget);
+
+      await tester.tap(find.text('Mưa vừa'));
+      await tester.pumpAndSettle();
+
+      expect(demoMode.value.scenario, 'moderate');
+    });
+
+    testWidgets('alley bottom sheet displays dead-end and blocked notice when tapped', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      demoMode.setEnabled(true);
+      await tester.pumpWidget(const FloodApp());
+      await tester.pumpAndSettle();
+
+      final al01 = RoadSegment.fromFeature(
+          (demoMapHeavyFixture['features'] as List)[2] as Map<String, dynamic>);
+      final mapState = tester.state(find.byType(MapTab)) as dynamic;
+      mapState.showSegment(al01);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hẻm 112 Kha Vạn Cân (Hẻm cụt A)'), findsOneWidget);
+      expect(find.text('Hẻm cụt'), findsOneWidget);
+      expect(find.textContaining('KHÔNG VÀO ĐƯỢC'), findsOneWidget);
+    });
+
+    testWidgets('RouteScreen displays ok status with success badge', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      demoMode.setEnabled(true);
+      demoMode.setScenario('none');
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: RouteScreen(initialFrom: 'P1', initialTo: 'J2'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tuyến thông suốt'), findsOneWidget);
+      expect(find.textContaining('không có đoạn bị cản trở nghiêm trọng'), findsOneWidget);
+    });
+
+    testWidgets('RouteScreen displays detour status with detour badge', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      demoMode.setEnabled(true);
+      demoMode.setScenario('heavy');
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: RouteScreen(initialFrom: 'P1', initialTo: 'J2'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Đường vòng tránh ngập'), findsOneWidget);
+      expect(find.textContaining('tránh các đoạn ngập lụt'), findsOneWidget);
+    });
+
+    testWidgets('RouteScreen displays unreachable status with blocked badge', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      demoMode.setEnabled(true);
+      demoMode.setScenario('heavy');
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: RouteScreen(initialFrom: 'P1', initialTo: 'P2'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Không thể di chuyển'), findsOneWidget);
+      expect(find.textContaining('Không tìm thấy tuyến đường thông suốt'), findsOneWidget);
+    });
+
+    testWidgets('disclaimer is always present on RouteScreen result card', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      demoMode.setEnabled(true);
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: RouteScreen(initialFrom: 'P1', initialTo: 'J2'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('mang tính MÔ PHỎNG'), findsOneWidget);
+    });
+
+    testWidgets('disabling simulation mode restores real map data', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      demoMode.setEnabled(true);
+      await tester.pumpWidget(const FloodApp());
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('ĐANG XEM DỮ LIỆU MÔ PHỎNG'), findsOneWidget);
+
+      demoMode.setEnabled(false);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('ĐANG XEM DỮ LIỆU MÔ PHỎNG'), findsNothing);
+      expect(find.text('Nguy cơ mưa lớn: Rất cao'), findsOneWidget);
+    });
+
+    testWidgets('RouteScreen renders cleanly without overflow on small screen (360x640)', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      demoMode.setEnabled(true);
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: RouteScreen(initialFrom: 'P1', initialTo: 'J2'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gợi ý đường đi (Mô phỏng)'), findsOneWidget);
+      expect(find.text('Đường vòng tránh ngập'), findsOneWidget);
+    });
+
+    testWidgets('RouteScreen renders cleanly with large text scale factor (1.8)', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      demoMode.setEnabled(true);
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.8)),
+          child: const MaterialApp(
+            home: RouteScreen(initialFrom: 'P1', initialTo: 'J2'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gợi ý đường đi (Mô phỏng)'), findsOneWidget);
+    });
+
+    testWidgets('tapping route button when simulation mode is off prompts dialog', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      useFakeBackend(tester);
+      demoMode.setEnabled(false);
+      await tester.pumpWidget(const FloodApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Gợi ý đường đi'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gợi ý đường đi'), findsOneWidget);
+      expect(find.text('Bật chế độ mô phỏng'), findsOneWidget);
+
+      await tester.tap(find.text('Bật chế độ mô phỏng'));
+      await tester.pumpAndSettle();
+
+      expect(demoMode.value.enabled, isTrue);
+      expect(find.text('Gợi ý đường đi (Mô phỏng)'), findsOneWidget);
     });
   });
 }

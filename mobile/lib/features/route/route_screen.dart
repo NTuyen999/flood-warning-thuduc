@@ -31,13 +31,21 @@ class _RouteScreenState extends State<RouteScreen> {
   @override
   void initState() {
     super.initState();
+    demoMode.addListener(_onDemoModeChanged);
     _loadPoints();
   }
 
   @override
   void dispose() {
+    demoMode.removeListener(_onDemoModeChanged);
     _mapController.dispose();
     super.dispose();
+  }
+
+  void _onDemoModeChanged() {
+    if (_fromPoint != null && _toPoint != null) {
+      _findRoute();
+    }
   }
 
   Future<void> _loadPoints() async {
@@ -226,6 +234,7 @@ class _RouteScreenState extends State<RouteScreen> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               initialValue: _fromPoint,
+                              isExpanded: true,
                               decoration: const InputDecoration(
                                 labelText: 'Điểm đi',
                                 border: OutlineInputBorder(),
@@ -233,7 +242,10 @@ class _RouteScreenState extends State<RouteScreen> {
                               ),
                               items: [
                                 for (final p in _points)
-                                  DropdownMenuItem(value: p.id, child: Text(p.name)),
+                                  DropdownMenuItem(
+                                    value: p.id,
+                                    child: Text(p.name, overflow: TextOverflow.ellipsis),
+                                  ),
                               ],
                               onChanged: (val) {
                                 if (val != null) {
@@ -249,6 +261,7 @@ class _RouteScreenState extends State<RouteScreen> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               initialValue: _toPoint,
+                              isExpanded: true,
                               decoration: const InputDecoration(
                                 labelText: 'Điểm đến',
                                 border: OutlineInputBorder(),
@@ -256,7 +269,10 @@ class _RouteScreenState extends State<RouteScreen> {
                               ),
                               items: [
                                 for (final p in _points)
-                                  DropdownMenuItem(value: p.id, child: Text(p.name)),
+                                  DropdownMenuItem(
+                                    value: p.id,
+                                    child: Text(p.name, overflow: TextOverflow.ellipsis),
+                                  ),
                               ],
                               onChanged: (val) {
                                 if (val != null) {
@@ -379,46 +395,56 @@ class _RouteScreenState extends State<RouteScreen> {
                                       children: [
                                         if (res.recommended != null) ...[
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                                             children: [
-                                              Column(
-                                                children: [
-                                                  const Icon(Icons.straighten, color: Colors.blue),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    res.recommended!.lengthM >= 1000
-                                                        ? '${(res.recommended!.lengthM / 1000).toStringAsFixed(2)} km'
-                                                        : '${res.recommended!.lengthM.round()} m',
-                                                    style: Theme.of(context).textTheme.titleMedium,
-                                                  ),
-                                                  Text('Quãng đường',
-                                                      style: Theme.of(context).textTheme.bodySmall),
-                                                ],
+                                              Expanded(
+                                                child: Column(
+                                                  children: [
+                                                    const Icon(Icons.straighten, color: Colors.blue),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      res.recommended!.lengthM >= 1000
+                                                          ? '${(res.recommended!.lengthM / 1000).toStringAsFixed(2)} km'
+                                                          : '${res.recommended!.lengthM.round()} m',
+                                                      style: Theme.of(context).textTheme.titleMedium,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    Text('Quãng đường',
+                                                        style: Theme.of(context).textTheme.bodySmall),
+                                                  ],
+                                                ),
                                               ),
-                                              Column(
-                                                children: [
-                                                  const Icon(Icons.timer, color: Colors.amber),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    '${res.recommended!.etaMin} phút',
-                                                    style: Theme.of(context).textTheme.titleMedium,
-                                                  ),
-                                                  Text('Thời gian ước tính*',
-                                                      style: Theme.of(context).textTheme.bodySmall),
-                                                ],
+                                              Expanded(
+                                                child: Column(
+                                                  children: [
+                                                    const Icon(Icons.timer, color: Colors.amber),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      '${res.recommended!.etaMin} phút',
+                                                      style: Theme.of(context).textTheme.titleMedium,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    Text('Thời gian ước tính*',
+                                                        textAlign: TextAlign.center,
+                                                        style: Theme.of(context).textTheme.bodySmall),
+                                                  ],
+                                                ),
                                               ),
-                                              Column(
-                                                children: [
-                                                  Icon(riskIcon(res.recommended!.maxLevel),
-                                                      color: riskColor(res.recommended!.maxLevel)),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    riskLabel(res.recommended!.maxLevel),
-                                                    style: Theme.of(context).textTheme.titleMedium,
-                                                  ),
-                                                  Text('Nguy cơ tối đa',
-                                                      style: Theme.of(context).textTheme.bodySmall),
-                                                ],
+                                              Expanded(
+                                                child: Column(
+                                                  children: [
+                                                    Icon(riskIcon(res.recommended!.maxLevel),
+                                                        color: riskColor(res.recommended!.maxLevel)),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      riskLabel(res.recommended!.maxLevel),
+                                                      style: Theme.of(context).textTheme.titleMedium,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    Text('Nguy cơ tối đa',
+                                                        textAlign: TextAlign.center,
+                                                        style: Theme.of(context).textTheme.bodySmall),
+                                                  ],
+                                                ),
                                               ),
                                             ],
                                           ),

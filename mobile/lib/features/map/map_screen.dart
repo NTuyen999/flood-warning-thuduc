@@ -129,7 +129,7 @@ class _MapTabState extends State<MapTab> {
     }
   }
 
-  void _showSegment(RoadSegment s) => showModalBottomSheet<void>(
+  void showSegment(RoadSegment s) => showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
         builder: (sheet) {
@@ -154,13 +154,12 @@ class _MapTabState extends State<MapTab> {
 
                   // Alley & simulation tags
                   if (s.kind == 'alley') ...[
-                    Row(
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
                       children: [
                         if (s.deadEnd)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: Pill(Icons.do_not_disturb_on, 'Hẻm cụt', Colors.purple),
-                          ),
+                          Pill(Icons.do_not_disturb_on, 'Hẻm cụt', Colors.purple),
                         Pill(
                           Icons.alt_route,
                           s.levelSource.startsWith('inherited:')
@@ -287,7 +286,7 @@ class _MapTabState extends State<MapTab> {
             onTap: () {
               final id = _hit.value?.hitValues.firstOrNull;
               final seg = map.segments.where((s) => s.id == id).firstOrNull;
-              if (seg != null) _showSegment(seg);
+              if (seg != null) showSegment(seg);
             },
             child: PolylineLayer<String>(
               hitNotifier: _hit,
