@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../models/demo.dart';
 import '../models/forecast.dart';
 import '../models/report.dart';
 import '../models/road_segment.dart';
@@ -153,4 +154,47 @@ class ApiService {
 
   /// Absolute URL of a report photo ("/uploads/x.jpg" in the API).
   String imageUrl(String path) => '${_dio.options.baseUrl}$path';
+
+  // ------------------------------------------------------------
+  // Demo simulation endpoints (/api/v1/demo/*)
+  // ------------------------------------------------------------
+
+  Future<List<DemoScenario>> getDemoScenarios() => _call(
+        () => _dio.get('/api/v1/demo/scenarios'),
+        (d) => [for (final s in d['scenarios'] as List) DemoScenario.fromJson(s as Map<String, dynamic>)],
+      );
+
+  Future<RiskMap> getDemoMap({String scenario = 'heavy', int? horizon}) => _call(
+        () => _dio.get('/api/v1/demo/map', queryParameters: {
+          'scenario': scenario,
+          'horizon': ?horizon,
+        }),
+        (d) => RiskMap.fromJson(d as Map<String, dynamic>),
+      );
+
+  Future<Forecast> getDemoForecast(String segmentId, {String scenario = 'heavy'}) => _call(
+        () => _dio.get('/api/v1/demo/forecast/$segmentId', queryParameters: {'scenario': scenario}),
+        (d) => Forecast.fromJson(d as Map<String, dynamic>),
+      );
+
+  Future<List<RoutePoint>> getDemoRoutePoints() => _call(
+        () => _dio.get('/api/v1/demo/route-points'),
+        (d) => [for (final p in d['items'] as List) RoutePoint.fromJson(p as Map<String, dynamic>)],
+      );
+
+  Future<RouteResult> getDemoRoute({
+    String scenario = 'heavy',
+    required String fromPoint,
+    required String toPoint,
+    int? horizon,
+  }) =>
+      _call(
+        () => _dio.get('/api/v1/demo/route', queryParameters: {
+          'scenario': scenario,
+          'from': fromPoint,
+          'to': toPoint,
+          'horizon': ?horizon,
+        }),
+        (d) => RouteResult.fromJson(d as Map<String, dynamic>),
+      );
 }
