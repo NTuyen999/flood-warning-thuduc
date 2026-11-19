@@ -1,0 +1,82 @@
+{
+  "is_demo": true,
+  "scenarios": [
+    {
+      "id": "none",
+      "label": "Không mưa",
+      "description": "Thời tiết khô ráo, tất cả các tuyến đường và hẻm đều thông thoáng, không có nguy cơ mưa lớn hay ngập lụt.",
+      "rain_mm_per_h": 0.0,
+      "banner": "Thời tiết khô ráo – không có nguy cơ mưa lớn trong 6 giờ tới.",
+      "segment_probabilities": {
+        "SEG01": [0.01, 0.01, 0.02, 0.02, 0.03, 0.03],
+        "SEG02": [0.01, 0.02, 0.02, 0.03, 0.03, 0.04],
+        "SEG05": [0.01, 0.01, 0.02, 0.02, 0.02, 0.03],
+        "SEG06": [0.02, 0.02, 0.03, 0.03, 0.04, 0.04],
+        "AL01": [0.01, 0.01, 0.01, 0.02, 0.02, 0.02],
+        "AL02": [0.01, 0.01, 0.02, 0.02, 0.02, 0.03],
+        "AL03": [0.01, 0.01, 0.01, 0.02, 0.02, 0.02],
+        "AL04": [0.01, 0.01, 0.01, 0.01, 0.02, 0.02]
+      },
+      "reports": []
+    },
+    {
+      "id": "moderate",
+      "label": "Mưa vừa",
+      "description": "Mưa rải rác gia tăng về chiều. Một số đoạn chính và hẻm tự ngập ở mức Vàng/Cam. Hẻm tắt AL03 vẫn xanh thông thoáng.",
+      "rain_mm_per_h": 18.5,
+      "banner": "CẢNH BÁO MƯA VỪA – Nguy cơ mưa lớn gia tăng từ giờ 4+ (mức Vàng/Cam trên các tuyến đường chính).",
+      "segment_probabilities": {
+        "SEG01": [0.03, 0.05, 0.08, 0.15, 0.22, 0.25],
+        "SEG02": [0.05, 0.10, 0.20, 0.35, 0.48, 0.52],
+        "SEG05": [0.03, 0.06, 0.09, 0.14, 0.20, 0.24],
+        "SEG06": [0.05, 0.12, 0.22, 0.38, 0.46, 0.50],
+        "AL01": [0.01, 0.02, 0.02, 0.03, 0.04, 0.05],
+        "AL02": [0.05, 0.10, 0.20, 0.36, 0.45, 0.52],
+        "AL03": [0.01, 0.02, 0.03, 0.04, 0.05, 0.06],
+        "AL04": [0.01, 0.01, 0.02, 0.02, 0.03, 0.03]
+      },
+      "reports": []
+    },
+    {
+      "id": "heavy",
+      "label": "Mưa nhiều",
+      "description": "Mưa lớn kéo dài gây ngập diện rộng. Đoạn SEG02, SEG06, hẻm AL01 (ngập tràn từ SEG02) và AL02 (tự ngập) bị BỊ CHẶN (mức Đỏ). Hẻm tắt AL03 ở mức Cam.",
+      "rain_mm_per_h": 45.0,
+      "banner": "CẢNH BÁO MƯA LỚN NGUY HIỂM – Nhiều đoạn đường & hẻm cụt bị ngập sâu nghiêm trọng (mức Đỏ, BỊ CHẶN).",
+      "segment_probabilities": {
+        "SEG01": [0.12, 0.25, 0.38, 0.45, 0.52, 0.55],
+        "SEG02": [0.20, 0.40, 0.62, 0.70, 0.75, 0.78],
+        "SEG05": [0.10, 0.22, 0.35, 0.42, 0.48, 0.50],
+        "SEG06": [0.18, 0.38, 0.60, 0.68, 0.72, 0.75],
+        "AL01": [0.02, 0.03, 0.04, 0.05, 0.06, 0.07],
+        "AL02": [0.22, 0.42, 0.60, 0.65, 0.68, 0.70],
+        "AL03": [0.08, 0.15, 0.28, 0.35, 0.40, 0.42],
+        "AL04": [0.01, 0.02, 0.02, 0.03, 0.03, 0.04]
+      },
+      "reports": [
+        {
+          "id": 101,
+          "segment_id": "SEG02",
+          "lat": 10.8365,
+          "lon": 106.7308,
+          "flood_level": "heavy",
+          "status": "new",
+          "age_minutes": 15,
+          "note": "Nước ngập hơn ngập bánh xe máy, ngập lụt lan vào đầu hẻm 112",
+          "image_url": null
+        },
+        {
+          "id": 102,
+          "segment_id": "AL02",
+          "lat": 10.8326,
+          "lon": 106.7236,
+          "flood_level": "heavy",
+          "status": "verified",
+          "age_minutes": 25,
+          "note": "Trũng thấp ngập sâu cuối hẻm cụt B",
+          "image_url": null
+        }
+      ]
+    }
+  ]
+}
