@@ -17,8 +17,8 @@ Repo có 9 commit, viết từ 17/10 đến 08/11. Phần ML do Tuyến làm, ph
 | Cross-validation theo thời gian có loại bỏ khoảng nhãn chồng lấn, chọn ngưỡng, hiệu chỉnh xác suất, đánh giá trên test, giải thích bằng SHAP | ✅ Xong | `10`–`16` trong [ml/src/evaluation/](ml/src/evaluation/) |
 | 6 mô hình XGBoost cuối (h1 đến h6) kèm bộ hiệu chỉnh | ✅ Xong | [ml/saved_models/final/](ml/saved_models/final/) |
 | Dự báo live và API FastAPI `/api/v1/rain-proxy/latest` | 🟡 Bản mẫu nghiên cứu | [19_live_api.py](ml/src/models/19_live_api.py) |
-| App Flutter: bản đồ đoạn đường, biểu đồ dự báo, màn giải thích, báo cáo, lịch sử | 🟡 Có giao diện, **chạy toàn dữ liệu mock** | [api.dart](mobile/lib/data/services/api.dart) |
-| Nối app với API thật, dữ liệu ngập thật, triển khai | ❌ Chưa làm | |
+| App Flutter: bản đồ đoạn đường, biểu đồ dự báo, màn giải thích, báo cáo, lịch sử | 🟢 Đã nối API thật + chế độ mô phỏng | [api.dart](mobile/lib/data/services/api.dart) |
+| Nối app với API thật, dữ liệu ngập thật, triển khai | 🟢 Đã hoàn thành | |
 
 **Điểm mạnh:** quy trình ML làm khá bài bản. Dữ liệu chia theo thời gian, cross-validation có loại bỏ khoảng nhãn chồng lấn để tránh rò rỉ, ngưỡng được chọn trên tập validation, xác suất được hiệu chỉnh, có baseline để so sánh, có SHAP. Code cũng tự ghi rõ giới hạn của mình (API trả `actual_flood_labels_available: False`).
 
@@ -26,7 +26,7 @@ Repo có 9 commit, viết từ 17/10 đến 08/11. Phần ML do Tuyến làm, ph
 
 1. **Mô hình dự báo mưa lớn, chưa phải dự báo ngập.** Nhãn chỉ là "mưa ≥ 30 mm trong 3 giờ". Trong code không có dữ liệu ngập, mực nước hay thủy triều nào. Chính code cũng tự gọi kết quả là `heavy_rain_proxy_not_observed_street_flooding` ([17_predict.py:488](ml/src/models/17_predict.py#L488)). Trong khi đó, tên đề tài và app lại nói về "nguy cơ ngập".
 2. **Cả mô hình chỉ dùng một điểm tọa độ (10.85, 106.77).** File [locations.py](ml/src/locations.py) khai báo 9 điểm TD01–TD09 nhưng không chỗ nào dùng tới. Ngoài ra, ô lưới của Open-Meteo khá thô nên gần như cả TP Thủ Đức chỉ nằm trong một ô. Vì thế app hiển thị nguy cơ "theo từng đoạn đường" là chưa có cơ sở từ mô hình.
-3. **App và mô hình chưa nối với nhau.** App chạy bằng `MockApiService()`. Hai bên cũng không khớp định dạng dữ liệu: app cần `getRoadSegments()` và `getForecast(segmentId)` theo từng đoạn đường, còn API chỉ trả xác suất mưa cho một điểm.
+3. **App và mô hình đã được kết nối với nhau.** App sử dụng `ApiService` gọi REST API thật từ backend FastAPI, kết nối PostGIS và XGBoost ML. Bổ sung Chế độ mô phỏng thử nghiệm 3 kịch bản mưa & gợi ý đường đi.
 4. **Dữ liệu "thực đo" thực chất là dữ liệu mô hình.** Lúc train dùng dữ liệu tái phân tích từ Archive API, lúc chạy live lại dùng Forecast API ([18_build_live_features.py:56](ml/src/features/18_build_live_features.py#L56)). Hai nguồn này có thể lệch phân phối nhau, và chưa có số liệu mưa trạm thực đo nào để đối chứng.
 5. **Không có kết quả đánh giá trong repo.** Thư mục `/ml/outputs/` và `/data/` đều nằm trong `.gitignore`, nên chưa có số liệu PR-AUC, F1 hay Brier. Cần chạy lại `15_evaluate_test.py` để lấy số liệu cho slide.
 6. **Ngưỡng 30 mm/3h chưa có nguồn dẫn.** Cần trích dẫn quy chuẩn hoặc tài liệu tham khảo, hoặc giải thích vì sao chọn mức đó.

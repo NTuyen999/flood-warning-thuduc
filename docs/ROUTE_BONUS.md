@@ -1,40 +1,40 @@
-# Đánh giá Tính năng "Tuyến đường An toàn" (Optional Feature - MB11)
+# Tính năng "Gợi ý Tuyến đường ít Rủi ro hơn" (Route Recommendation - Demo Scope)
 
-Tài liệu giải thích lý do kỹ thuật chưa triển khai tính năng tìm tuyến đường an toàn (tránh điểm ngập) trong phiên bản hiện tại và đề xuất thiết kế tối thiểu cho giai đoạn sau.
-
----
-
-## 1. Lý do Chưa Triển khai trong Phiên bản Hiện tại
-
-1. **Backend chưa có Routing Engine:**
-   - Hệ thống backend hiện tại sử dụng PostgreSQL + PostGIS lưu trữ các đoạn đường chính (`road_segments`) dạng danh sách đoạn phẳng (flat segment list), **chưa xây dựng đồ thị mạng lưới giao thông (Road Network Graph)** với các đỉnh (nodes) và cạnh (edges).
-   - Không có công cụ tìm đường như pgRouting, OSRM hoặc GraphHopper để thực hiện thuật toán Dijkstra/A* tìm đường đi giữa 2 điểm bất kỳ.
-
-2. **Dữ liệu Mô hình ML Đồng nhất trên Mọi Đoạn đường:**
-   - Mô hình XGBoost ML hiện tại sử dụng 1 điểm đầu vào thời tiết chung cho toàn bộ khu vực TP Thủ Đức (10.85, 106.77).
-   - Do đó, mọi đoạn đường trong cùng một mốc giờ đều có **xác suất rủi ro mưa lớn giống hệt nhau** từ mô hình ML.
-   - Nếu tìm "tuyến ít rủi ro hơn", thuật toán sẽ chỉ có thể dựa hoàn toàn vào các báo cáo ngập từ cộng đồng (`report_summary`), vốn mang tính thời điểm, rải rác và không đại diện cho toàn bộ mạng lưới giao thông. Việc khẳng định một tuyến đường là "an toàn" trong điều kiện dữ liệu này là **không đủ cơ sở khoa học và thiếu an toàn cho người dùng**.
+Tài liệu chi tiết việc cài đặt tính năng gợi ý tuyến đường tránh ngập lụt trên mạng lưới mô phỏng TP Thủ Đức.
 
 ---
 
-## 2. Thiết kế Tối thiểu Nếu Triển khai trong Tương lai
+## 1. Trạng thái Cài đặt & Phạm vi Thực hiện
 
-Nếu hệ thống được nâng cấp trong tương lai, kiến trúc tối thiểu cho tính năng tìm đường tránh ngập bao gồm:
+Tính năng gợi ý đường đi đã được cài đặt **hoàn chỉnh ở phạm vi mô phỏng (Demo Simulation Scope)**:
 
-### A. Phía Backend:
-- Cài đặt extension **pgRouting** trên PostgreSQL/PostGIS.
-- Chuyển GeoJSON các đoạn đường thành đồ thị mạng lưới giao thông (`road_network_vertices_pgr` & `road_network_edges`).
-- Định nghĩa hàm trọng số cạnh (Edge Weight Cost):
-  $$\text{Cost} = \text{Chiều dài (m)} \times \left(1 + w_1 \cdot \text{Xác suất rủi ro ML} + w_2 \cdot \text{Trọng số ngập cộng đồng}\right)$$
-- Cung cấp REST API: `GET /api/v1/route?start_lat=...&start_lon=...&end_lat=...&end_lon=...` trả về GeoJSON danh sách các đoạn đường tối ưu.
-
-### B. Phía Mobile App:
-- Thêm giao diện chọn "Điểm đi" và "Điểm đến" trên bản đồ.
-- Hiển thị tuyến đường gợi ý bằng `PolylineLayer` nét đứt hoặc màu xanh dương riêng biệt.
+1. **Backend Routing Engine:** Xây dựng router định tuyến Dijkstra (`/api/v1/demo/route`) dựa trên ma trận trọng số đa yếu tố (chiều dài $\times$ hệ số mức nguy cơ).
+2. **Mạng lưới Mô phỏng (Demo Network):** Tạo mạng lưới giao thông thu nhỏ gồm 29 đoạn đường chính và 4 hẻm phụ (gồm hẻm cụt ngập tràn từ đường chính, hẻm cụt tự ngập, hẻm liên thông đường vòng và hẻm cụt an toàn).
+3. **Ứng dụng Mobile:** Thêm màn hình **Gợi ý đường đi** ([route_screen.dart](file:///D:/HK5_2026/NT120/Project/mobile/lib/features/route/route_screen.dart)), vẽ tuyến đường khuyến nghị (nét liền xanh) và tuyến đường ngắn nhất bị cản trở (nét đứt xám), hiển thị trạng thái badge (`ok`, `detour`, `warning`, `unreachable`).
 
 ---
 
-## 3. Tuyên bố Miễn trừ Tách biệt (Disclaimer)
+## 2. Các Giới hạn Kỹ thuật Cần Nêu rõ khi Báo cáo
+
+- **Đồ thị mô phỏng thu nhỏ:** Mạng lưới giao thông hiện tại là đồ thị giả lập 11 nút / 11 cạnh trên khu vực Kha Vạn Cân, chưa phải đồ thị giao thông toàn bộ TP Thủ Đức.
+- **Dữ liệu đầu vào ML đồng nhất:** Mô hình XGBoost ML hiện tại lấy 1 điểm tọa độ thời tiết cho cả khu vực, do đó xác suất dự báo trên các đoạn đường chính thuần túy đến từ mô hình ML là đồng nhất. Các kịch bản mưa (`none`, `moderate`, `heavy`) được thiết lập để giả định sự khác biệt nguy cơ giữa các đoạn.
+- **Hình học hẻm:** Các hẻm AL01–AL04 là dữ liệu giả lập nhằm minh họa quy tắc kế thừa ngập lụt (`inherits_from`) và xử lý hẻm cụt (`dead_end`), không phải vị trí hẻm thực tế.
+
+---
+
+## 3. Thuật toán và Quy tắc Trọng số Định tuyến
+
+$$\text{Cost} = \text{Length (m)} \times \text{Multiplier}(\text{risk\_level})$$
+
+- `green` (<10%): Multiplier = `1.0`
+- `yellow` (10-30%): Multiplier = `1.4`
+- `orange` (30-60%): Multiplier = `4.0`
+- `red` (≥60%): Multiplier = `Infinity` (Đoạn đường bị chặn, loại khỏi đồ thị).
+- **Quy tắc Hẻm cụt:** Cạnh hẻm cụt chỉ được phép duyệt qua nếu điểm đi hoặc điểm đến nằm trong chính hẻm đó.
+
+---
+
+## 4. Tuyên bố Miễn trừ Tách biệt (Disclaimer)
 
 > **CẢNH BÁO QUAN TRỌNG:**
-> Ứng dụng **KHÔNG CAM KẾT AN TOÀN TUYỆT ĐỐI** trên bất kỳ tuyến đường nào được gợi ý. Thông tin dự báo nguy cơ mưa lớn và báo cáo ngập từ cộng đồng chỉ mang tính chất tham khảo hỗ trợ quyết định di chuyển. Người lái xe phải luôn quan sát tình hình giao thông thực tế tại hiện trường và tuân thủ hướng dẫn của lực lượng chức năng.
+> Ứng dụng **KHÔNG CAM KẾT AN TOÀN TUYỆT ĐỐI** trên bất kỳ tuyến đường nào được gợi ý. Thông tin dự báo nguy cơ mưa lớn và gợi ý đường đi trên chế độ mô phỏng chỉ mang tính chất tham khảo hỗ trợ quyết định di chuyển. Người lái xe phải luôn quan sát tình hình giao thông thực tế tại hiện trường và tuân thủ hướng dẫn của lực lượng chức năng.
