@@ -80,3 +80,10 @@ flutter run -d "<device-id>" --dart-define=API_URL=http://192.168.1.10:8000
 | **TC16** | Xoay ngang màn hình (Landscape) | Xoay ngang điện thoại ở các màn hình | Bố cục màn hình co giãn hợp lý, các danh sách và form đều cuộn được. | | |
 | **TC17** | Vuốt để làm mới (Pull to refresh) | Vuốt kéo xuống ở màn Tuyến đường và Cộng đồng | Vòng quay loading xuất hiện và dữ liệu mới được tải lại từ API. | | |
 | **TC18** | Lọc danh sách báo cáo Cộng đồng | Chuyển giữa bộ lọc "Còn hiệu lực" và "Tất cả" | Mặc định chỉ hiện tin trong 6 giờ qua. Chuyển "Tất cả" hiện thêm các tin đã hết hạn. | | |
+| **TC19** | Bật/Tắt Chế độ Mô phỏng | Mở icon (i) -> Bật công tắc "Chế độ mô phỏng & Gợi ý đường đi" | Banner màu cam "ĐANG XEM DỮ LIỆU MÔ PHỎNG" xuất hiện ở đầu màn hình bản đồ. | | |
+| **TC20** | Chuyển đổi 3 Kịch bản Mô phỏng | Chọn lần lượt "Không mưa", "Mưa vừa", "Mưa nhiều" trên thanh kịch bản | Mức độ rủi ro và màu sắc các đoạn đường chính + hẻm thay đổi tương ứng. | | |
+| **TC21** | Hiển thị Hẻm và Hẻm cụt trên Bản đồ | Bật chế độ mô phỏng -> Quan sát khu vực Kha Vạn Cân | Hẻm vẽ nét đứt mảnh, có biểu tượng dấu cấm ở nút cuối của hẻm cụt AL01, AL02, AL04. | | |
+| **TC22** | Chi tiết Hẻm cụt bị ngập (AL01 & AL02) | Chạm vào Hẻm AL01 hoặc AL02 ở kịch bản "Mưa nhiều" | Hiển thị chip "Hẻm cụt", thông báo "KHÔNG VÀO ĐƯỢC (ĐOẠN BỊ CHẶN)" và nguồn ngập kế thừa/tự ngập. | | |
+| **TC23** | Gợi ý Đường đi - Tuyến đường vòng (Detour) | Bấm icon la bàn Chỉ đường -> Chọn P1 -> J2 ở kịch bản "Mưa nhiều" -> Bấm Tìm đường | Tuyến đường vòng qua Hẻm 78 (AL03) nét liền xanh dương, tránh đoạn Kha Vạn Cân 2 ngập Đỏ. | | |
+| **TC24** | Gợi ý Đường đi - Không thể tới nơi (Unreachable) | Chọn P1 -> P2 ở kịch bản "Mưa nhiều" | Trạng thái hiển thị badge "Không thể di chuyển", thông báo khuyên người dùng hoãn chuyến đi. | | |
+| **TC25** | Bật Chế độ Mô phỏng từ Hộp thoại Gợi ý Đường đi | Tắt chế độ mô phỏng -> Bấm icon la bàn Chỉ đường -> Chọn "Bật chế độ mô phỏng" | Hộp thoại thông báo mô phỏng xuất hiện, bấm nút mở thẳng màn hình Gợi ý đường đi. | | |

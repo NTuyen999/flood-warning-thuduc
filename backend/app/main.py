@@ -444,3 +444,7 @@ def upload_image(file: UploadFile = File(...)):
     name = f"{uuid.uuid4().hex}.{ext}"
     (config.UPLOAD_DIR / name).write_bytes(data)
     return {"image_url": f"/uploads/{name}"}
+
+
+from . import demo
+app.include_router(demo.router)

@@ -1,6 +1,6 @@
-# Báo cáo Kỹ thuật Phần Mobile (Flutter App) - Đồ án Cảnh báo Mưa lớn TP Thủ Đức
+# Báo cáo Kỹ thuật Phần Mobile & Gợi ý Đường đi - Đồ án Cảnh báo Mưa lớn TP Thủ Đức
 
-Tài liệu chi tiết đóng góp phần Mobile (Tường) cho báo cáo đồ án cuối kỳ.
+Tài liệu chi tiết đóng góp phần Mobile (Tường) cho báo cáo đồ án cuối kỳ, bao gồm tính năng Gợi ý đường đi và Chế độ mô phỏng.
 
 ---
 
@@ -10,59 +10,36 @@ Tài liệu chi tiết đóng góp phần Mobile (Tường) cho báo cáo đồ 
 
 ```
 lib/
-├── core/                  # Thư viện dùng chung (Màu sắc rủi ro, Widgets tái sử dụng)
+├── core/                  # Thư viện dùng chung (Màu sắc rủi ro, Widgets, DemoMode)
+│   ├── demo_mode.dart     # ValueNotifier quản lý trạng thái bật/tắt & kịch bản mô phỏng
 │   ├── risk_colors.dart   # Định nghĩa 4 mức nguy cơ & màu sắc/icon/nhãn tương ứng
 │   └── widgets.dart       # BaseMap, LoadView, ErrorRetry, Pill, SectionTitle
 ├── data/                  # Tầng dữ liệu & giao tiếp API
-│   ├── models/            # Forecast, RiskMap, RoadSegment, Report, Weather, Explanation
-│   └── services/          # ApiService (dùng Dio HTTP client, xử lý lỗi chuẩn)
+│   ├── models/            # Forecast, RiskMap, RoadSegment, Report, Weather, Demo models
+│   │   ├── demo.dart      # DemoScenario, RoutePoint, RoutePath, RouteResult
+│   │   └── road_segment.dart # Mở rộng thuộc tính kind, deadEnd, parentSegmentId, blocked
+│   └── services/          # ApiService (dùng Dio HTTP client, hỗ trợ /api/v1/demo/*)
 └── features/              # Các tính năng chính (Feature-first)
-    ├── map/               # Bản đồ rủi ro & danh sách tuyến đường
-    ├── forecast/          # Màn hình chi tiết dự báo 6 giờ
+    ├── map/               # Bản đồ rủi ro, hẻm mô phỏng & danh sách tuyến đường
+    ├── forecast/          # Màn hình chi tiết dự báo 6 giờ (thực tế & mô phỏng)
     ├── explain/           # Màn hình giải thích SHAP ("Vì sao?")
-    └── report/            # Form gửi báo cáo ngập & Lịch sử báo cáo cộng đồng
+    ├── report/            # Form gửi báo cáo ngập & Lịch sử báo cáo cộng đồng
+    └── route/             # Màn hình Gợi ý đường đi (RouteScreen)
 ```
 
 ---
 
-## 2. Luồng Dữ liệu (App → API → DB / ML)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Người dùng Mobile
-    participant App as Flutter App
-    participant API as FastAPI Backend
-    participant ML as XGBoost ML Model
-    participant DB as PostgreSQL + PostGIS
-
-    User->>App: Mở tab Bản đồ
-    App->>API: GET /api/v1/map/risks?horizon=
-    API->>ML: Dự báo thời tiết Open-Meteo (1h-6h)
-    API->>DB: Đọc đoạn đường + Tổng hợp Báo cáo cộng đồng
-    API-->>App: Trả về GeoJSON (Đoạn đường + Xác suất + Legend)
-    App-->>User: Vẽ đường tô màu rủi ro + Marker cộng đồng
-
-    User->>App: Gửi Báo cáo Ngập (Ảnh + GPS)
-    App->>API: POST /api/v1/uploads (multipart file)
-    API-->>App: Trả về image_url (/uploads/x.jpg)
-    App->>API: POST /api/v1/reports (lat, lon, level, note, image_url)
-    API->>DB: Gán đoạn đường gần nhất (ST_DWithin) & Lưu báo cáo
-    API-->>App: 201 Created (hoặc 409 Trùng / 422 Ngoài khu vực)
-    App-->>User: Cập nhật thông báo & Tải lại bản đồ
-```
-
----
-
-## 3. Bảng Màn hình và Endpoint API
+## 2. Bảng Màn hình và Endpoint API (Bao gồm các Endpoint Mô phỏng)
 
 | Màn hình | Chức năng | Endpoint API sử dụng | Phương thức |
 |---|---|---|---|
-| **Bản đồ** | Vẽ đoạn đường tô màu rủi ro & Marker báo cáo | `/api/v1/map/risks?horizon=` | `GET` |
-| **Bản đồ** | Lấy danh sách báo cáo ngập cộng đồng | `/api/v1/reports` | `GET` |
+| **Bản đồ (Thực tế)** | Vẽ đoạn đường tô màu rủi ro & Marker báo cáo | `/api/v1/map/risks?horizon=` | `GET` |
+| **Bản đồ (Mô phỏng)** | Vẽ 29 đoạn chính + 4 hẻm phụ theo kịch bản | `/api/v1/demo/map?scenario=&horizon=` | `GET` |
+| **Gợi ý đường đi** | Danh sách điểm chọn đi/đến có tên | `/api/v1/demo/route-points` | `GET` |
+| **Gợi ý đường đi** | Thuật toán Dijkstra gợi ý đường vòng ít rủi ro | `/api/v1/demo/route?scenario=&from=&to=` | `GET` |
 | **Tuyến đường** | Danh sách các đường xếp theo số báo cáo ngập | `/api/v1/map/risks` | `GET` |
-| **Dự báo** | Thẻ tóm tắt & Biểu đồ dự báo 6 cột | `/api/v1/forecast/{segment_id}` | `GET` |
-| **Dự báo** | Thời tiết hiện tại khu vực | `/api/v1/weather/current` | `GET` |
+| **Dự báo (Thực tế)** | Thẻ tóm tắt & Biểu đồ dự báo 6 cột | `/api/v1/forecast/{segment_id}` | `GET` |
+| **Dự báo (Mô phỏng)** | Biểu đồ dự báo 6 cột kịch bản mô phỏng | `/api/v1/demo/forecast/{segment_id}?scenario=` | `GET` |
 | **Vì sao?** | Giải thích yếu tố ảnh hưởng SHAP | `/api/v1/explain/{segment_id}?horizon=` | `GET` |
 | **Báo cáo** | Tải ảnh báo cáo lên server | `/api/v1/uploads` | `POST` |
 | **Báo cáo** | Gửi thông tin báo cáo ngập vị trí GPS | `/api/v1/reports` | `POST` |
@@ -70,35 +47,36 @@ sequenceDiagram
 
 ---
 
-## 4. Các Quyết định Kỹ thuật Chính
+## 3. Các Quyết định Kỹ thuật Chính
 
-1. **Nguồn bản đồ nền linh hoạt (Configurable Tile Source):**
-   - Mạng bị chặn `tile.openstreetmap.org`. App đã chuyển sang mặc định dùng **Esri World Street Map** kèm dự phòng **CARTO**.
-   - Nguồn tile hỗ trợ cấu hình động qua `--dart-define=TILE_URL=...` và `--dart-define=TILE_ATTRIBUTION=...`.
-2. **Cấu hình máy chủ linh hoạt khi demo:**
-   - URL máy chủ có thể thay đổi ngay trong ứng dụng qua dialog "Máy chủ API", được lưu vào `shared_preferences`.
-   - Có nút **Kiểm tra kết nối** gọi `/health` trả về kết quả tiếng Việt rõ ràng kèm `model_version`.
-3. **Cơ chế chống tràn layout & Accessibility:**
-   - Áp dụng `Flexible` và `Expanded` cho toàn bộ văn bản nhãn rủi ro và thẻ báo cáo, đảm bảo không tràn layout ở kích thước màn hình nhỏ (360x640) và phông chữ lớn (textScaleFactor 1.5–2.0).
-   - Bổ sung nhãn `Semantics` cho các icon và marker bản đồ.
-4. **Xử lý sự cố dữ liệu cũ (Stale Data):**
-   - Khi nguồn dữ liệu thời tiết gián đoạn (`stale == true`), ứng dụng tự động hiển thị banner cảnh báo dữ liệu chậm cập nhật nổi bật ở màn hình bản đồ và dự báo.
+1. **Gợi ý đường đi trên mạng mô phỏng (Demo Routing Engine):**
+   - Xây dựng thuật toán Dijkstra trên đồ thị giao thông mạng lưới thu nhỏ (`demo_network.json`).
+   - Tự động chuyển tuyến (`detour`) qua Hẻm liên thông 78 khi đường chính Kha Vạn Cân 2 bị ngập Đỏ.
+   - Cảnh báo hẻm cụt (`warning`) và thông báo không thể tới nơi (`unreachable`) khi bị chặn hoàn toàn.
+2. **Kế thừa mức rủi ro Hẻm (`inherits_from` & `dead_end`):**
+   - Hẻm cụt AL01 kế thừa nguy cơ ngập tràn từ đường chính Kha Vạn Cân 2. Khi Kha Vạn Cân 2 ngập Đỏ, Hẻm AL01 tự động chuyển sang mức Đỏ bị chặn.
+   - Hẻm cụt AL02 thể hiện trường hợp hẻm trũng tự ngập độc lập với đường chính.
+3. **Nguồn bản đồ nền linh hoạt (Esri + CARTO fallback):**
+   - Mặc định dùng **Esri World Street Map** kèm fallback **CARTO**, hỗ trợ cấu hình qua `--dart-define=TILE_URL=...`.
+4. **Kiểm thử tự động toàn diện:**
+   - Xây dựng bộ test suite 41 test cases (UI widget tests, Accessibility 360x640 / textScale 1.8, Demo routing, Error handling) pass 100%.
 
 ---
 
-## 5. Hạn chế & Định hướng Phát triển
+## 4. Hạn chế Kỹ thuật & Định hướng Phát triển
 
 ### Hạn chế kỹ thuật hiện tại:
-- **Đầu vào mô hình ML:** Mô hình hiện tại lấy 1 điểm tọa độ thời tiết đại diện cho toàn khu vực TP Thủ Đức (10.85, 106.77), do đó xác suất dự báo mưa lớn thuần túy từ mô hình ML là **đồng nhất trên tất cả các đoạn đường**. Sự khác biệt mức độ rủi ro hiển thị trên từng đoạn chủ yếu đến từ dữ liệu báo cáo cộng đồng thực tế (`report_summary`).
-- **Ngưỡng rủi ro cố định:** 4 mức rủi ro (Xanh/Vàng/Cam/Đỏ) đang sử dụng các ngưỡng xác suất cố định (<10%, <30%, <60%, ≥60%) chưa qua kiểm chứng bằng dữ liệu ngập thực tế.
-- **Nguồn thời tiết:** Dữ liệu thời tiết lấy từ dự báo Open-Meteo, không phải từ trạm đo thực địa.
+- **Đồ thị mô phỏng thu nhỏ:** Tính năng gợi ý đường đi hiện chạy trên đồ thị mô phỏng 11 nút / 11 cạnh khu vực Kha Vạn Cân, chưa kết nối toàn bộ mạng lưới đường TP Thủ Đức.
+- **Dữ liệu đầu vào ML đồng nhất:** Mô hình XGBoost ML lấy 1 điểm tọa độ thời tiết cho toàn khu vực, các kịch bản mô phỏng giúp thể hiện sự phân hóa nguy cơ mưa lớn giữa các tuyến.
+- **Hình học hẻm:** Các hẻm AL01–AL04 là dữ liệu giả lập cho mục đích mô phỏng thuật toán và giao diện.
 
 ### Định hướng phát triển:
-- Tích hợp thêm dữ liệu cao độ địa hình (DEM) và hệ thống thoát nước TP Thủ Đức cho từng đoạn đường.
-- Cập nhật thuật toán định tuyến giao thông thông minh khi backend bổ sung routing engine.
-- Tự động gửi thông báo đẩy (Push Notification) khi vị trí người dùng tiến vào vùng rủi ro đỏ.
+- Mở rộng đồ thị giao thông bằng pgRouting cho toàn địa bàn TP Thủ Đức.
+- Cập nhật trọng số cạnh thời gian thực kết hợp giữa mô hình ML, dữ liệu độ cao DEM và báo cáo ngập từ người đi đường.
 
 ---
 
-## 6. Lưu ý về Báo cáo Giữa kỳ
-Mục *"App chạy toàn dữ liệu mock"* trong tài liệu Báo cáo giữa kỳ (`BAO_CAO_GIUA_KY.md`) đã **lỗi thời**. Hiện tại, ứng dụng di động đã hoàn thiện 100% tích hợp với API backend thật, đọc dữ liệu PostGIS và mô hình XGBoost ML thực tế.
+## 5. Lưu ý về Báo cáo Giữa kỳ
+Mục *"App chạy toàn dữ liệu mock"* trong tài liệu Báo cáo giữa kỳ (`BAO_CAO_GIUA_KY.md`) đã **lỗi thời**. Ứng dụng di động hiện tại hoạt động song song 2 chế độ:
+1. **Chế độ thực tế (Mặc định):** Đọc dữ liệu REST API từ backend FastAPI, DB PostgreSQL/PostGIS và mô hình XGBoost ML thực tế.
+2. **Chế độ mô phỏng (Demo Mode):** Cho phép người dùng thử nghiệm 3 kịch bản thời tiết, quan sát sự ngập lụt ở các hẻm cụt và trải nghiệm tính năng gợi ý đường đi ít rủi ro hơn.

@@ -11,9 +11,28 @@ class RoadSegment {
   final String? level;
   final int activeReports;
   final int floodedReports;
+  final String kind;
+  final bool deadEnd;
+  final String? parentSegmentId;
+  final String levelSource;
+  final bool blocked;
+  final bool isDemo;
 
-  RoadSegment(this.id, this.name, this.points, this.probability, this.level,
-      this.activeReports, this.floodedReports);
+  RoadSegment(
+    this.id,
+    this.name,
+    this.points,
+    this.probability,
+    this.level,
+    this.activeReports,
+    this.floodedReports, {
+    this.kind = 'main',
+    this.deadEnd = false,
+    this.parentSegmentId,
+    this.levelSource = 'own',
+    this.blocked = false,
+    this.isDemo = false,
+  });
 
   LatLng get middle => points[points.length ~/ 2];
 
@@ -32,6 +51,12 @@ class RoadSegment {
       p['risk_level'] as String?,
       (reports['active'] as int?) ?? 0,
       (reports['flooded'] as int?) ?? 0,
+      kind: (p['kind'] as String?) ?? 'main',
+      deadEnd: (p['dead_end'] as bool?) ?? false,
+      parentSegmentId: p['parent_segment_id'] as String?,
+      levelSource: (p['level_source'] as String?) ?? 'own',
+      blocked: (p['blocked'] as bool?) ?? false,
+      isDemo: (p['is_demo'] as bool?) ?? false,
     );
   }
 }
